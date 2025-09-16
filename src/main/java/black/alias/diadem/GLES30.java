@@ -318,6 +318,14 @@
 		 GL30.glGenVertexArrays(arrays);
 	 }
  
+	 public int glGenVertexArray () {
+		 return GL30.glGenVertexArrays();
+	 }
+ 
+	 public void glDeleteVertexArray (int array) {
+		 GL30.glDeleteVertexArrays(array);
+	 }
+ 
 	 public boolean glIsVertexArray (int array) {
 		 return GL30.glIsVertexArray(array);
 	 }

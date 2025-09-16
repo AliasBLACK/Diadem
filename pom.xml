@@ -126,7 +126,8 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>black.alias.diadem.SimpleTriangleApp</mainClass>
+          <mainClass>black.alias.diadem.SimpleTriangleTest</mainClass>
+          <includePluginDependencies>true</includePluginDependencies>
         </configuration>
       </plugin>
     </plugins>
