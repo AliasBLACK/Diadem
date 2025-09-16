@@ -165,7 +165,10 @@ public class Matrix3 {
      * @throws GdxRuntimeException if the matrix is singular (not invertible) */
     public Matrix3 inv () {
         float det = det();
-        if (det == 0) throw new GdxRuntimeException("Can't invert a singular matrix");
+        if (det == 0) {
+            System.err.println("Error: Can't invert a singular matrix");
+            return this;
+        }
 
         float inv_det = 1.0f / det;
 

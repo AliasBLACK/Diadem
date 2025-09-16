@@ -36,8 +36,6 @@
  import org.lwjgl.opengl.GL40;
  import org.lwjgl.opengl.GL41;
  import org.lwjgl.opengl.GL43;
- 
- import static black.alias.diadem.GLENUMS.*;
 
  class GLES30 extends GLES20 {
 	 public void glReadBuffer (int mode) {
@@ -52,7 +50,7 @@
 		 else if (indices instanceof IntBuffer)
 			 GL12.glDrawRangeElements(mode, start, end, (IntBuffer)indices);
 		 else
-			 throw new GdxRuntimeException("indices must be byte, short or int buffer");
+			 System.err.println("Error: indices must be byte, short or int buffer");
 	 }
  
 	 public void glDrawRangeElements (int mode, int start, int end, int count, int type, int offset) {
@@ -79,8 +77,8 @@
 		 else if (pixels instanceof DoubleBuffer)
 			 GL12.glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, (DoubleBuffer)pixels);
 		 else
-			 throw new GdxRuntimeException("Can't use " + pixels.getClass().getName()
-				 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer or DoubleBuffer instead. Blame LWJGL");
+			 System.err.println("Error: Can't use " + pixels.getClass().getName()
+			 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer or DoubleBuffer instead. Blame LWJGL");
 	 }
  
 	 public void glTexImage3D (int target, int level, int internalformat, int width, int height, int depth, int border, int format,
@@ -101,12 +99,8 @@
 			 GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, (ShortBuffer)pixels);
 		 else if (pixels instanceof IntBuffer)
 			 GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, (IntBuffer)pixels);
-		 else if (pixels instanceof FloatBuffer)
-			 GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, (FloatBuffer)pixels);
-		 else if (pixels instanceof DoubleBuffer)
-			 GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, (DoubleBuffer)pixels);
 		 else
-			 throw new GdxRuntimeException("Can't use " + pixels.getClass().getName()
+			 System.err.println("Error: Can't use " + pixels.getClass().getName()
 				 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer or DoubleBuffer instead. Blame LWJGL");
 	 }
  

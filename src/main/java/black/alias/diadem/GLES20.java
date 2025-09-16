@@ -30,12 +30,10 @@
  import org.lwjgl.opengl.GL14;
  import org.lwjgl.opengl.GL15;
  import org.lwjgl.opengl.GL20;
- import org.lwjgl.opengl.GL32;
 
  import static black.alias.diadem.GLENUMS.*;
  import static black.alias.diadem.BufferUtils.*;
 
-import black.alias.diadem.GdxRuntimeException;
 
  public class GLES20 {
 	 private ByteBuffer buffer = null;
@@ -132,9 +130,10 @@ import black.alias.diadem.GdxRuntimeException;
 	 }
  
 	 public void glBufferSubData (int target, int offset, int size, Buffer data) {
-		 if (data == null)
-			 throw new GdxRuntimeException("Using null for the data not possible, blame LWJGL");
-		 else if (data instanceof ByteBuffer)
+		 if (data == null) {
+			 System.err.println("Error: Using null for the data not possible, blame LWJGL");
+			 return;
+		 } else if (data instanceof ByteBuffer)
 			 GL15.glBufferSubData(target, offset, (ByteBuffer)data);
 		 else if (data instanceof IntBuffer)
 			 GL15.glBufferSubData(target, offset, (IntBuffer)data);
@@ -179,13 +178,15 @@ import black.alias.diadem.GdxRuntimeException;
 		 if (data instanceof ByteBuffer) {
 			 GL13.glCompressedTexImage2D(target, level, internalformat, width, height, border, (ByteBuffer)data);
 		 } else {
-			 throw new GdxRuntimeException("Can't use " + data.getClass().getName() + " with this method. Use ByteBuffer instead.");
+			 System.err.println("Error: Can't use " + data.getClass().getName() + " with this method. Use ByteBuffer instead.");
+			 return;
 		 }
 	 }
  
 	 public void glCompressedTexSubImage2D (int target, int level, int xoffset, int yoffset, int width, int height, int format,
 		 int imageSize, Buffer data) {
-		 throw new GdxRuntimeException("not implemented");
+		 System.err.println("Error: glCompressedTexSubImage2D not implemented");
+		 return;
 	 }
  
 	 public void glCopyTexImage2D (int target, int level, int internalformat, int x, int y, int width, int height, int border) {
@@ -297,9 +298,11 @@ import black.alias.diadem.GdxRuntimeException;
 			 bb.limit(position + count);
 			 GL11.glDrawElements(mode, bb);
 			 bb.limit(oldLimit);
-		 } else
-			 throw new GdxRuntimeException("Can't use " + indices.getClass().getName()
+		 } else {
+			 System.err.println("Error: Can't use " + indices.getClass().getName()
 				 + " with this method. Use ShortBuffer or ByteBuffer instead. Blame LWJGL");
+			 return;
+		 }
 	 }
  
 	 public void glEnable (int cap) {
@@ -543,9 +546,11 @@ import black.alias.diadem.GdxRuntimeException;
 			 GL11.glReadPixels(x, y, width, height, format, type, (IntBuffer)pixels);
 		 else if (pixels instanceof FloatBuffer)
 			 GL11.glReadPixels(x, y, width, height, format, type, (FloatBuffer)pixels);
-		 else
-			 throw new GdxRuntimeException("Can't use " + pixels.getClass().getName()
+		 else {
+			 System.err.println("Error: Can't use " + pixels.getClass().getName()
 				 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer or FloatBuffer instead. Blame LWJGL");
+			 return;
+		 }
 	 }
  
 	 public void glReleaseShaderCompiler () {
@@ -610,9 +615,11 @@ import black.alias.diadem.GdxRuntimeException;
 			 GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, (FloatBuffer)pixels);
 		 else if (pixels instanceof DoubleBuffer)
 			 GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, (DoubleBuffer)pixels);
-		 else
-			 throw new GdxRuntimeException("Can't use " + pixels.getClass().getName()
+		 else {
+			 System.err.println("Error: Can't use " + pixels.getClass().getName()
 				 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer or DoubleBuffer instead. Blame LWJGL");
+			 return;
+		 }
 	 }
  
 	 public void glTexParameterf (int target, int pname, float param) {
@@ -643,9 +650,11 @@ import black.alias.diadem.GdxRuntimeException;
 			 GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, (FloatBuffer)pixels);
 		 else if (pixels instanceof DoubleBuffer)
 			 GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, (DoubleBuffer)pixels);
-		 else
-			 throw new GdxRuntimeException("Can't use " + pixels.getClass().getName()
+		 else {
+			 System.err.println("Error: Can't use " + pixels.getClass().getName()
 				 + " with this method. Use ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer or DoubleBuffer instead. Blame LWJGL");
+			 return;
+		 }
 	 }
  
 	 public void glUniform1f (int location, float x) {
@@ -820,18 +829,22 @@ import black.alias.diadem.GdxRuntimeException;
 				 GL20.glVertexAttribPointer(indx, size, type, normalized, stride, ((ByteBuffer)buffer).asShortBuffer());
 			 else if (type == GL_FLOAT)
 				 GL20.glVertexAttribPointer(indx, size, type, normalized, stride, ((ByteBuffer)buffer).asFloatBuffer());
-			 else
-				 throw new GdxRuntimeException("Can't use " + buffer.getClass().getName() + " with type " + type
+			 else {
+				 System.err.println("Error: Can't use " + buffer.getClass().getName() + " with type " + type
 					 + " with this method. Use ByteBuffer and one of GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT or GL_FLOAT for type. Blame LWJGL");
+				 return;
+			 }
 		 } else if (buffer instanceof FloatBuffer) {
 			 if (type == GL_FLOAT)
 				 GL20.glVertexAttribPointer(indx, size, type, normalized, stride, (FloatBuffer)buffer);
-			 else
-				 throw new GdxRuntimeException(
-					 "Can't use " + buffer.getClass().getName() + " with type " + type + " with this method.");
-		 } else
-			 throw new GdxRuntimeException(
-				 "Can't use " + buffer.getClass().getName() + " with this method. Use ByteBuffer instead. Blame LWJGL");
+			 else {
+				 System.err.println("Error: Can't use " + buffer.getClass().getName() + " with type " + type + " with this method.");
+				 return;
+			 }
+		 } else {
+			 System.err.println("Error: Can't use " + buffer.getClass().getName() + " with this method. Use ByteBuffer instead. Blame LWJGL");
+			 return;
+		 }
 	 }
  
 	 public void glViewport (int x, int y, int width, int height) {

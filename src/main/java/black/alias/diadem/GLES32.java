@@ -26,7 +26,7 @@
  import org.lwjgl.opengl.GL30;
  import org.lwjgl.opengl.GL31;
  import org.lwjgl.opengl.GL32;
- import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL33;
  import org.lwjgl.opengl.GL40;
  import org.lwjgl.opengl.GL43;
  import org.lwjgl.opengl.GL45;
@@ -60,17 +60,56 @@ import static black.alias.diadem.GLENUMS.*;
          GL43.glDebugMessageInsert(source, type, id, severity, buf);
      }
  
-     public void glDebugMessageCallback (DebugProc callback) {
-         if (callback != null) {
-             GL43.glDebugMessageCallback(new GLDebugMessageCallbackI() {
-                 public void invoke (int source, int type, int id, int severity, int length, long message, long userParam) {
-                     callback.onMessage(source, type, id, severity, MemoryUtil.memUTF8(message, length));
-                 }
-             }, 0);
-         } else {
-             GL43.glDebugMessageCallback(null, 0);
-         }
-     }
+     public void glDebugMessageCallback () {
+        GL43.glDebugMessageCallback(new GLDebugMessageCallbackI() {
+            public void invoke (int source, int type, int id, int severity, int length, long message, long userParam) {
+                String messageStr = MemoryUtil.memUTF8(message, length);
+                String severityStr = getSeverityString(severity);
+                String typeStr = getTypeString(type);
+                String sourceStr = getSourceString(source);
+                
+                System.err.println("OpenGL Debug [" + severityStr + "] " + typeStr + " from " + sourceStr + " (ID: " + id + "): " + messageStr);
+            }
+        }, 0);
+    }
+    
+    private static String getSeverityString(int severity) {
+        switch (severity) {
+            case 0x9146: return "HIGH";      // GL_DEBUG_SEVERITY_HIGH
+            case 0x9147: return "MEDIUM";    // GL_DEBUG_SEVERITY_MEDIUM
+            case 0x9148: return "LOW";       // GL_DEBUG_SEVERITY_LOW
+            case 0x826B: return "NOTIFICATION"; // GL_DEBUG_SEVERITY_NOTIFICATION
+            default: return "UNKNOWN";
+        }
+    }
+    
+    private static String getTypeString(int type) {
+        switch (type) {
+            case 0x824C: return "ERROR";           // GL_DEBUG_TYPE_ERROR
+            case 0x824D: return "DEPRECATED";      // GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR
+            case 0x824E: return "UNDEFINED";       // GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR
+            case 0x824F: return "PORTABILITY";     // GL_DEBUG_TYPE_PORTABILITY
+            case 0x8250: return "PERFORMANCE";     // GL_DEBUG_TYPE_PERFORMANCE
+            case 0x8251: return "OTHER";           // GL_DEBUG_TYPE_OTHER
+            default: return "UNKNOWN";
+        }
+    }
+    
+    private static String getSourceString(int source) {
+        switch (source) {
+            case 0x8246: return "API";             // GL_DEBUG_SOURCE_API
+            case 0x8247: return "WINDOW_SYSTEM";   // GL_DEBUG_SOURCE_WINDOW_SYSTEM
+            case 0x8248: return "SHADER_COMPILER"; // GL_DEBUG_SOURCE_SHADER_COMPILER
+            case 0x8249: return "THIRD_PARTY";     // GL_DEBUG_SOURCE_THIRD_PARTY
+            case 0x824A: return "APPLICATION";     // GL_DEBUG_SOURCE_APPLICATION
+            case 0x824B: return "OTHER";           // GL_DEBUG_SOURCE_OTHER
+            default: return "UNKNOWN";
+        }
+    }
+    
+    public void glDebugMessageCallbackDisable () {
+        GL43.glDebugMessageCallback(null, 0);
+    }
  
      public int glGetDebugMessageLog (int count, IntBuffer sources, IntBuffer types, IntBuffer ids, IntBuffer severities,
          IntBuffer lengths, ByteBuffer messageLog) {
@@ -151,11 +190,10 @@ import static black.alias.diadem.GLENUMS.*;
              int position = bb.position();
              int oldLimit = bb.limit();
              bb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawElementsBaseVertex(mode, bb, basevertex);
+             GL32.glDrawElementsBaseVertex(mode, bb, basevertex);
              bb.limit(oldLimit);
          } else
-             throw new GdxRuntimeException(
-                 "Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
+             System.err.println("Error: Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
      }
  
      public void glDrawRangeElementsBaseVertex (int mode, int start, int end, int count, int type, Buffer indices, int basevertex) {
@@ -164,25 +202,24 @@ import static black.alias.diadem.GLENUMS.*;
              int position = sb.position();
              int oldLimit = sb.limit();
              sb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end, sb, basevertex);
+             GL32.glDrawRangeElementsBaseVertex(mode, start, end, sb, basevertex);
              sb.limit(oldLimit);
          } else if (indices instanceof ByteBuffer && type == GL_UNSIGNED_SHORT) {
              ShortBuffer sb = ((ByteBuffer)indices).asShortBuffer();
              int position = sb.position();
              int oldLimit = sb.limit();
              sb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end, sb, basevertex);
+             GL32.glDrawRangeElementsBaseVertex(mode, start, end, sb, basevertex);
              sb.limit(oldLimit);
          } else if (indices instanceof ByteBuffer && type == GL_UNSIGNED_BYTE) {
              ByteBuffer bb = (ByteBuffer)indices;
              int position = bb.position();
              int oldLimit = bb.limit();
              bb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end, bb, basevertex);
+             GL32.glDrawRangeElementsBaseVertex(mode, start, end, bb, basevertex);
              bb.limit(oldLimit);
          } else
-             throw new GdxRuntimeException(
-                 "Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
+             System.err.println("Error: Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
      }
  
      public void glDrawElementsInstancedBaseVertex (int mode, int count, int type, Buffer indices, int instanceCount,
@@ -192,30 +229,29 @@ import static black.alias.diadem.GLENUMS.*;
              int position = sb.position();
              int oldLimit = sb.limit();
              sb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, sb, instanceCount, basevertex);
+             GL32.glDrawElementsInstancedBaseVertex(mode, sb, instanceCount, basevertex);
              sb.limit(oldLimit);
          } else if (indices instanceof ByteBuffer && type == GL_UNSIGNED_SHORT) {
              ShortBuffer sb = ((ByteBuffer)indices).asShortBuffer();
              int position = sb.position();
              int oldLimit = sb.limit();
              sb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, sb, instanceCount, basevertex);
+             GL32.glDrawElementsInstancedBaseVertex(mode, sb, instanceCount, basevertex);
              sb.limit(oldLimit);
-         } else if (indices instanceof ByteBuffer && type == black.alias.diadem.GLENUMS.GL_UNSIGNED_BYTE) {
+         } else if (indices instanceof ByteBuffer && type == GL_UNSIGNED_BYTE) {
              ByteBuffer bb = (ByteBuffer)indices;
              int position = bb.position();
              int oldLimit = bb.limit();
              bb.limit(position + count);
-             org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, bb, instanceCount, basevertex);
+             GL32.glDrawElementsInstancedBaseVertex(mode, bb, instanceCount, basevertex);
              bb.limit(oldLimit);
          } else
-             throw new GdxRuntimeException(
-                 "Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
+             System.err.println("Error: Can't use " + indices.getClass().getName() + " with this method. Use ShortBuffer or ByteBuffer instead.");
      }
  
      public void glDrawElementsInstancedBaseVertex (int mode, int count, int type, int indicesOffset, int instanceCount,
          int basevertex) {
-         org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, count, type, indicesOffset, instanceCount, basevertex);
+         GL32.glDrawElementsInstancedBaseVertex(mode, count, type, indicesOffset, instanceCount, basevertex);
      }
  
      public void glFramebufferTexture (int target, int attachment, int texture, int level) {
@@ -241,7 +277,7 @@ import static black.alias.diadem.GLENUMS.*;
              } else if (data instanceof FloatBuffer) {
                  GL45.glReadnPixels(x, y, width, height, format, type, (FloatBuffer)data);
              } else {
-                 throw new GdxRuntimeException("buffer type not supported");
+                 System.err.println("Error: buffer type not supported");
              }
              data.limit(oldLimit);
          }

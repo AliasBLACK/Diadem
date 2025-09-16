@@ -28,8 +28,6 @@
  import org.lwjgl.opengl.GL43;
  import org.lwjgl.opengl.GL46;
 
-import static black.alias.diadem.GLENUMS.*;
-
  public class GLES31 extends GLES30 {
  
      private final static ByteBuffer tmpByteBuffer = BufferUtils.newByteBuffer(16);
