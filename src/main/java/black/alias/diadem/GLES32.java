@@ -1,5 +1,7 @@
 /*******************************************************************************
- * Copyright 2022 See AUTHORS file.
+ * Copyright 2022
+ * Mario Zechner <badlogicgames@gmail.com>
+ * Nathan Sweet <nathan.sweet@gmail.com> 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
