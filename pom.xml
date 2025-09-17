@@ -18,6 +18,94 @@
     <graaljs.version>24.2.2</graaljs.version>
   </properties>
 
+  <profiles>
+    <!-- Windows x64 -->
+    <profile>
+      <id>windows-x64</id>
+      <activation>
+        <os>
+          <family>windows</family>
+          <arch>amd64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-windows</lwjgl.natives>
+      </properties>
+    </profile>
+    
+    <!-- Windows ARM64 -->
+    <profile>
+      <id>windows-arm64</id>
+      <activation>
+        <os>
+          <family>windows</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-windows-arm64</lwjgl.natives>
+      </properties>
+    </profile>
+    
+    <!-- macOS x64 -->
+    <profile>
+      <id>macos-x64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>x86_64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-macos</lwjgl.natives>
+      </properties>
+    </profile>
+    
+    <!-- macOS ARM64 (Apple Silicon) -->
+    <profile>
+      <id>macos-arm64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-macos-arm64</lwjgl.natives>
+      </properties>
+    </profile>
+    
+    <!-- Linux x64 -->
+    <profile>
+      <id>linux-x64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>amd64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-linux</lwjgl.natives>
+      </properties>
+    </profile>
+    
+    <!-- Linux ARM64 -->
+    <profile>
+      <id>linux-arm64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <lwjgl.natives>natives-linux-arm64</lwjgl.natives>
+      </properties>
+    </profile>
+  </profiles>
+
   <dependencyManagement>
     <dependencies>
       <dependency>

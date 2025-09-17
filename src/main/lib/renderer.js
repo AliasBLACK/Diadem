@@ -173,6 +173,43 @@ globalThis.gl = {
 	},
 
 	shaderSource: (shader, source) => {
+		if (source) {
+			// Platform-specific GLSL version translation
+			const platform = Java.type('java.lang.System').getProperty('os.name').toLowerCase();
+			
+			if (platform.includes('mac')) {
+				// macOS: Convert WebGL GLSL ES to desktop GLSL Core Profile
+				source = source.replace(/#version 300 es/g, '#version 330 core');
+				source = source.replace(/precision\s+(lowp|mediump|highp)\s+float\s*;/g, '');
+				source = source.replace(/precision\s+(lowp|mediump|highp)\s+int\s*;/g, '');
+				
+				// Convert WebGL-specific attributes/varyings to desktop GLSL
+				if (source.includes('attribute ')) {
+					source = source.replace(/attribute /g, 'in ');
+				}
+				if (source.includes('varying ')) {
+					if (source.includes('gl_FragColor')) {
+						// Fragment shader
+						source = source.replace(/varying /g, 'in ');
+					} else {
+						// Vertex shader
+						source = source.replace(/varying /g, 'out ');
+					}
+				}
+				
+				// Handle gl_FragColor for Core Profile
+				if (source.includes('gl_FragColor')) {
+					source = 'out vec4 fragColor;\n' + source;
+					source = source.replace(/gl_FragColor/g, 'fragColor');
+				}
+			} else {
+				// Windows/Linux: More flexible, but still convert for consistency
+				source = source.replace(/#version 300 es/g, '#version 430 core');
+				source = source.replace(/precision\s+(lowp|mediump|highp)\s+float\s*;/g, '');
+				source = source.replace(/precision\s+(lowp|mediump|highp)\s+int\s*;/g, '');
+			}
+		}
+		
 		GL20.glShaderSource(shader ? shader : 0, source ? source : "");
 	},
 

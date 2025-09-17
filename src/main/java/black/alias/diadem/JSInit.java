@@ -82,6 +82,23 @@ public class JSInit {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
         
+        // Platform-specific OpenGL context configuration
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("mac")) {
+            // macOS requires Core Profile and forward compatibility
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+            System.out.println("Configured OpenGL Core Profile for macOS");
+        } else {
+            // Windows/Linux can use compatibility profile
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            System.out.println("Configured OpenGL 4.3 Core Profile for " + osName);
+        }
+        
         // Create the window
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "JavaScript WebGL Application", NULL, NULL);
         if (window == NULL) {
