@@ -3,9 +3,15 @@ package black.alias.diadem;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.FileSystem;
+import org.graalvm.polyglot.io.IOAccess;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.*;
+import java.nio.file.attribute.FileAttribute;
+import java.util.Set;
 
 /**
  * WebGL2 Context that bridges JavaScript WebGL2 API calls to Java GLES implementation.
@@ -14,10 +20,15 @@ import java.nio.file.Paths;
 public class JSContext implements AutoCloseable {
     private final Context jsContext;
     
+    private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
+    
     public JSContext() {
         this.jsContext = Context.newBuilder("js")
             .allowAllAccess(true)
             .allowExperimentalOptions(true)
+            .allowIO(IOAccess.newBuilder()
+                .fileSystem(new CustomFileSystem())
+                .build())
             .option("js.esm-eval-returns-exports", "true")
             .option("js.ecmascript-version", "2022")
             .build();
@@ -29,6 +40,154 @@ public class JSContext implements AutoCloseable {
             
         } catch (IOException e) {
             throw new RuntimeException("Failed to load WebGL2 bridge script", e);
+        }
+    }
+    
+    /**
+     * Custom FileSystem that maps 'three' module to the actual three.module.js file
+     */
+    private class CustomFileSystem implements FileSystem {
+        private final FileSystem defaultFS = FileSystem.newDefaultFileSystem();
+        
+        @Override
+        public Path parsePath(URI uri) {
+            String uriStr = uri.toString();
+            if ("three".equals(uriStr)) {
+                return THREE_MODULE_PATH;
+            }
+            if (uriStr.startsWith("three.") && uriStr.endsWith(".js")) {
+                return Paths.get("/virtual/" + uriStr);
+            }
+            return defaultFS.parsePath(uri);
+        }
+        
+        @Override
+        public Path parsePath(String path) {
+            if ("three".equals(path)) {
+                return THREE_MODULE_PATH;
+            }
+            if (path.startsWith("three.") && path.endsWith(".js")) {
+                return Paths.get("/virtual/" + path);
+            }
+            if (path.startsWith("./three.") && path.endsWith(".js")) {
+                return Paths.get("/virtual/" + path.substring(2));
+            }
+            return defaultFS.parsePath(path);
+        }
+        
+        @Override
+        public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+            if (THREE_MODULE_PATH.equals(path)) {
+                String content = new String(Files.readAllBytes(Paths.get("src/main/lib/three.module.js")));
+                return createByteChannelFrom(content);
+            }
+            
+            String pathStr = path.toString().replace('\\', '/');
+            if (pathStr.startsWith("/virtual/three.") && pathStr.endsWith(".js")) {
+                String fileName = pathStr.substring("/virtual/".length());
+                Path actualFile = Paths.get("src/main/lib/" + fileName);
+                
+                if (Files.exists(actualFile)) {
+                    String content = new String(Files.readAllBytes(actualFile));
+                    return createByteChannelFrom(content);
+                }
+            }
+            
+            return defaultFS.newByteChannel(path, options, attrs);
+        }
+        
+        private SeekableByteChannel createByteChannelFrom(String content) {
+            byte[] bytes = content.getBytes();
+            
+            return new SeekableByteChannel() {
+                private int position = 0;
+                
+                @Override
+                public int read(ByteBuffer dst) throws IOException {
+                    if (position >= bytes.length) {
+                        return -1;
+                    }
+                    int remaining = Math.min(dst.remaining(), bytes.length - position);
+                    dst.put(bytes, position, remaining);
+                    position += remaining;
+                    return remaining;
+                }
+                
+                @Override
+                public int write(ByteBuffer src) throws IOException {
+                    throw new UnsupportedOperationException("Write not supported");
+                }
+                
+                @Override
+                public long position() throws IOException {
+                    return position;
+                }
+                
+                @Override
+                public SeekableByteChannel position(long newPosition) throws IOException {
+                    this.position = (int) newPosition;
+                    return this;
+                }
+                
+                @Override
+                public long size() throws IOException {
+                    return bytes.length;
+                }
+                
+                @Override
+                public SeekableByteChannel truncate(long size) throws IOException {
+                    throw new UnsupportedOperationException("Truncate not supported");
+                }
+                
+                @Override
+                public boolean isOpen() {
+                    return true;
+                }
+                
+                @Override
+                public void close() throws IOException {
+                    // Nothing to close
+                }
+            };
+        }
+        
+        // Delegate other methods to default FileSystem
+        @Override
+        public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
+            if (THREE_MODULE_PATH.equals(path) || path.toString().startsWith("/virtual/three.")) {
+                return;
+            }
+            defaultFS.checkAccess(path, modes, linkOptions);
+        }
+        
+        @Override
+        public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
+            defaultFS.createDirectory(dir, attrs);
+        }
+        
+        @Override
+        public void delete(Path path) throws IOException {
+            defaultFS.delete(path);
+        }
+        
+        @Override
+        public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
+            return defaultFS.newDirectoryStream(dir, filter);
+        }
+        
+        @Override
+        public Path toAbsolutePath(Path path) {
+            return defaultFS.toAbsolutePath(path);
+        }
+        
+        @Override
+        public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
+            return defaultFS.toRealPath(path, linkOptions);
+        }
+        
+        @Override
+        public java.util.Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
+            return defaultFS.readAttributes(path, attributes, options);
         }
     }
     
@@ -63,6 +222,14 @@ public class JSContext implements AutoCloseable {
     public Value executeScriptFile(String filename) throws IOException {
         String script = new String(Files.readAllBytes(Paths.get(filename)));
         return executeScript(script);
+    }
+    
+    /**
+     * Execute ES6 module from a file
+     */
+    public Value executeModuleFile(String filename) throws IOException {
+        String moduleCode = new String(Files.readAllBytes(Paths.get(filename)));
+        return executeModule(moduleCode);
     }
     
     /**

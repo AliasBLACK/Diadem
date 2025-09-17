@@ -140,20 +140,8 @@ public class JSInit {
             // Load polyfills.
             jsContext.executeScriptFile("src/main/lib/polyfills.js"); 
 
-            // Load Three.js CJS.
-            org.graalvm.polyglot.Source threeCjsSource = org.graalvm.polyglot.Source.newBuilder("js", 
-                new java.io.File("src/main/lib/three.cjs"))
-                .mimeType("application/javascript")
-                .name("three.cjs")
-                .build();
-            jsContext.getJavaScriptContext().eval(threeCjsSource);
-            jsContext.executeScript("""
-                globalThis.THREE = globalThis.module.exports;
-                console.log('Three.js loaded using CJS format');
-            """);
-
-            // Load and execute main.js from client folder
-            jsContext.executeScriptFile("src/main/src/main.js");
+            // Load and execute main.js from client folder as ES6 module
+            jsContext.executeModuleFile("src/main/src/main.js");
 
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());
