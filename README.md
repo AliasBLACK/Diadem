@@ -1,35 +1,68 @@
-# Three.js LWJGL Integration - Proof of Concept
+# Diadem
 
-This project demonstrates running Three.js JavaScript code on a native LWJGL OpenGL ES context using GraalVM Community and GraalJS Community. It creates a fake Canvas API that bridges JavaScript WebGL calls to native OpenGL ES calls through LWJGL.
+A minimal desktop **[Three.js](https://github.com/mrdoob/three.js)** implementation powered by **[LWJGL](https://github.com/LWJGL/lwjgl3)** and **[GraalJS](https://github.com/oracle/graaljs)**, providing native WebGL2 rendering without bulky webviews. Perfect for desktop applications that need 3D graphics with JavaScript flexibility, including potential integrations with native libraries like Steam and Twitch APIs.
 
-## Features
+## Philosophy
 
-- **GraalJS Integration**: Uses GraalVM's JavaScript engine to execute Three.js code
-- **Fake Canvas API**: Implements a JavaScript-compatible Canvas and WebGL context that maps to LWJGL OpenGL ES
-- **Three.js Compatibility**: Includes a minimal Three.js implementation for basic 3D rendering
-- **Cube Rendering**: Demonstrates rendering a rotating green cube as a proof of concept
+This project is a proof of concept for running [Three.js](https://github.com/mrdoob/three.js) applications natively on desktop without the overhead of browser engines or webviews. By bridging JavaScript WebGL2 calls directly to native OpenGL through [LWJGL](https://github.com/LWJGL/lwjgl3), we achieve:
+
+- **Lightweight**: No Chromium/WebView dependencies
+- **Native Performance**: Direct OpenGL calls via LWJGL
+- **Desktop Integration**: Easy access to native APIs (Steam, Twitch, file system)
+- **AOT Ready**: Designed for GraalVM Native Image compilation
 
 ## Requirements
 
-- Java 17 or higher
-- GraalVM Community Edition (recommended)
-- Maven 3.6+
+- **[GraalVM](https://github.com/oracle/graal) 21** or higher (Community or Enterprise Edition)
+- [Maven](https://github.com/apache/maven) 3.6+
+- [LWJGL](https://github.com/LWJGL/lwjgl3) 3.3.3 (OpenGL, GLFW)
+- [GraalJS](https://github.com/oracle/graaljs) 24.2.2
 - Windows (configured for Windows natives, but can be adapted for other platforms)
+
+## Quickstart
+
+Write your Three.js applications in `src/main/src/main.js`:
+
+```javascript
+// Full Three.js API available
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, 800/600, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ context: gl });
+
+// Create your 3D objects
+const geometry = new THREE.BoxGeometry();
+const material = new THREE.MeshNormalMaterial();
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+camera.position.z = 5;
+
+// Animation loop using requestAnimationFrame
+function animate() {
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    
+    renderer.render(scene, camera);
+}
+
+requestAnimationFrame(animate);
+```
 
 ## Project Structure
 
 ```
-src/main/java/com/example/
-├── ThreeJSLWJGLApp.java           # Main application class
-├── canvas/
-│   ├── FakeCanvas.java            # Fake HTML5 Canvas implementation
-│   └── FakeWebGLRenderingContext.java  # WebGL context that maps to OpenGL ES
-└── js/
-    ├── JavaScriptBridge.java      # GraalJS integration and Three.js loader
-    ├── WindowObject.java          # Fake window object
-    ├── DocumentObject.java        # Fake document object
-    ├── ConsoleObject.java         # Console implementation for debugging
-    └── PerformanceObject.java     # Performance API stub
+src/main/
+├── java/black/alias/diadem/
+│   ├── JSInit.java                # Main application launcher
+│   ├── JSContext.java             # JavaScript execution context
+│   ├── Math/                      # Matrix and vector math utilities
+│   └── Utils/                     # OpenGL adapters and buffer utilities
+├── lib/
+│   ├── three.cjs                  # Three.js CommonJS build
+│   ├── renderer.js                # WebGL2 to LWJGL bridge
+│   └── polyfills.js               # Browser API polyfills
+└── src/
+    └── main.js                    # Client application entry point
 ```
 
 ## Building and Running
@@ -44,64 +77,19 @@ src/main/java/com/example/
    mvn exec:java
    ```
 
-   Or alternatively:
-   ```bash
-   mvn exec:java -Dexec.mainClass="com.example.ThreeJSLWJGLApp"
-   ```
+   The application will:
+   - Initialize LWJGL OpenGL context
+   - Load WebGL2 bridge and browser polyfills
+   - Execute `src/main/src/main.js` with Three.js support
+   - Render a rotating cube in a native window
 
-## How It Works
+## GraalVM Native Image
 
-1. **LWJGL Window**: Creates an OpenGL ES context using GLFW
-2. **Fake Canvas**: Implements Canvas and WebGL APIs that JavaScript expects
-3. **GraalJS Context**: Sets up a JavaScript execution environment with browser-like globals
-4. **Three.js Bridge**: Loads a minimal Three.js implementation that works with the fake Canvas
-5. **Rendering Loop**: Executes JavaScript animation code that renders through native OpenGL ES
-
-## Key Components
-
-### FakeWebGLRenderingContext
-Maps WebGL API calls to LWJGL OpenGL ES calls:
-- `gl.createShader()` → `GLES20.glCreateShader()`
-- `gl.bufferData()` → `GLES20.glBufferData()`
-- `gl.drawElements()` → `GLES20.glDrawElements()`
-
-### JavaScriptBridge
-- Creates GraalJS context with browser-like environment
-- Injects fake `window`, `document`, `console` objects
-- Loads minimal Three.js implementation
-- Executes JavaScript animation code
-
-### Minimal Three.js
-Implements core Three.js classes:
-- `THREE.Scene`, `THREE.PerspectiveCamera`
-- `THREE.BoxGeometry`, `THREE.MeshBasicMaterial`
-- `THREE.Mesh`, `THREE.WebGLRenderer`
-
-## Limitations
-
-This is a proof of concept with several limitations:
-- Minimal Three.js implementation (only basic cube rendering)
-- No texture support
-- Simplified matrix operations
-- No advanced Three.js features (lighting, shadows, etc.)
-- Basic animation loop
-
-## Extending the Project
-
-To extend this proof of concept:
-1. Add more Three.js features to the minimal implementation
-2. Implement texture loading and binding
-3. Add more geometry types and materials
-4. Implement proper matrix transformations
-5. Add support for Three.js loaders and utilities
-
-## Troubleshooting
-
-- Ensure GraalVM is properly installed and configured
-- Check that LWJGL natives match your platform
-- Verify OpenGL ES 2.0 support on your graphics card
-- Enable verbose logging for debugging JavaScript execution
+For AOT compilation:
+```bash
+native-image --no-fallback -cp target/classes black.alias.diadem.JSInit
+```
 
 ## License
 
-This is a proof of concept project for educational purposes.
+Apache License 2.0 - See LICENSE file for details.
