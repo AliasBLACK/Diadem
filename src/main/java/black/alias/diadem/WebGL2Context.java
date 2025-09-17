@@ -30,10 +30,8 @@ import java.nio.file.Paths;
  */
 public class WebGL2Context implements AutoCloseable {
     private final Context jsContext;
-    private final GLES32 gles;
     
     public WebGL2Context() {
-        this.gles = new GLES32();
         this.jsContext = Context.newBuilder("js")
             .allowAllAccess(true)
             .allowExperimentalOptions(true)
@@ -771,13 +769,6 @@ public class WebGL2Context implements AutoCloseable {
     public Value executeScriptFile(String filename) throws IOException {
         String script = new String(Files.readAllBytes(Paths.get(filename)));
         return executeScript(script);
-    }
-    
-    /**
-     * Get the underlying GLES context for direct access
-     */
-    public GLES32 getGLESContext() {
-        return gles;
     }
     
     /**

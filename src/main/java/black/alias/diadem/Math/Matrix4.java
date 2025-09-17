@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2011
+ * LibGDX Authors
  * Mario Zechner <badlogicgames@gmail.com>
  * Nathan Sweet <nathan.sweet@gmail.com> 
  * 
@@ -16,7 +17,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package black.alias.diadem;
+package black.alias.diadem.Math;
 
 /** Encapsulates a column major 4 by 4 matrix. Like the current OpenGL ES glLoadMatrixf expects.
  * @author badlogicgames@gmail.com */

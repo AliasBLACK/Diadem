@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2011
+ * LibGDX Authors
  * Mario Zechner <badlogicgames@gmail.com>
  * Nathan Sweet <nathan.sweet@gmail.com> 
  * 
@@ -16,7 +17,7 @@
  * limitations under the License.
  ******************************************************************************/
 
- package black.alias.diadem;
+ package black.alias.diadem.Utils;
 
  import java.nio.Buffer;
  import java.nio.ByteBuffer;
@@ -27,6 +28,9 @@
  import java.nio.IntBuffer;
  import java.nio.LongBuffer;
  import java.nio.ShortBuffer;
+
+import black.alias.diadem.Math.Matrix3;
+import black.alias.diadem.Math.Matrix4;
  
  /** Class with static helper methods to increase the speed of array/direct buffer and direct buffer/direct buffer transfers
   * 

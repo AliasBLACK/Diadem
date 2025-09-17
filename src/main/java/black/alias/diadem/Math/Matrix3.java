@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2011
+ * LibGDX Authors
  * Mario Zechner <badlogicgames@gmail.com>
  * Nathan Sweet <nathan.sweet@gmail.com> 
  * 
@@ -16,7 +17,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package black.alias.diadem;
+package black.alias.diadem.Math;
 
 /** A 3x3 column major matrix for 2D transforms and rotations.
  * @author badlogicgames@gmail.com */

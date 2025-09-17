@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2011
+ * LibGDX Authors
  * Mario Zechner <badlogicgames@gmail.com>
  * Nathan Sweet <nathan.sweet@gmail.com> 
  * 
@@ -16,7 +17,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package black.alias.diadem;
+package black.alias.diadem.Utils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
