@@ -41,7 +41,7 @@ const material = new THREE.MeshNormalMaterial();
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 
-camera.position.z = 5;
+camera.position.z = 3;
 
 // Animation loop using requestAnimationFrame
 function animate() {
