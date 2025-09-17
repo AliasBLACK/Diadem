@@ -17,7 +17,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class ThreeJSTest {
     
     private long window;
-    private WebGL2Context webgl2Context;
+    private JSContext webgl2Context;
     
     private static final int WINDOW_WIDTH = 800;
     private static final int WINDOW_HEIGHT = 600;
@@ -102,7 +102,7 @@ public class ThreeJSTest {
     private void initWebGL2Context() {
         try {
             System.out.println("Initializing WebGL2 context...");
-            webgl2Context = new WebGL2Context();
+            webgl2Context = new JSContext();
             
             // Add polyfills for missing browser APIs
             String polyfills = """

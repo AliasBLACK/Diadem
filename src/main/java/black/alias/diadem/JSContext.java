@@ -28,10 +28,10 @@ import java.nio.file.Paths;
  * WebGL2 Context that bridges JavaScript WebGL2 API calls to Java GLES implementation.
  * Provides a complete WebGL2-compatible interface for JavaScript applications.
  */
-public class WebGL2Context implements AutoCloseable {
+public class JSContext implements AutoCloseable {
     private final Context jsContext;
     
-    public WebGL2Context() {
+    public JSContext() {
         this.jsContext = Context.newBuilder("js")
             .allowAllAccess(true)
             .allowExperimentalOptions(true)
