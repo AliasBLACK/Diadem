@@ -18,7 +18,7 @@ var material = new THREE.MeshNormalMaterial();
 var cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 
-camera.position.z = 5; // move camera back so we can see the cube
+camera.position.z = 3; // move camera back so we can see the cube
 
 // Implement the render function from minimal example
 var frameCount = 0;
