@@ -126,7 +126,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>black.alias.diadem.ThreeJSTest</mainClass>
+          <mainClass>black.alias.diadem.JSInit</mainClass>
           <includePluginDependencies>true</includePluginDependencies>
         </configuration>
       </plugin>

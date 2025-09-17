@@ -7,7 +7,7 @@ const glAdapter = Java.type('black.alias.diadem.Utils.GLAdapter');
 const bufferUtils = Java.type('black.alias.diadem.Utils.BufferUtils');
 
 /**
- * WebGL2 JavaScript Bridge
+ * WebGL2 Renderer
  * Maps WebGL2 API calls to LWJGL OpenGL 4.3 implementation.
  */
 globalThis.gl = {
