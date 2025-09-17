@@ -19,7 +19,6 @@
 
 package black.alias.diadem.Utils;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 /** A resizable, ordered or unordered array of objects. If unordered, this class avoids a memory copy when removing elements (the
@@ -34,7 +33,6 @@ public class Array<T> implements Iterable<T> {
     public boolean ordered;
 
     private ArrayIterable<T> iterable;
-    private Predicate.PredicateIterable<T> predicateIterable;
 
     /** Creates an ordered array with a capacity of 16. */
     public Array () {
@@ -69,7 +67,7 @@ public class Array<T> implements Iterable<T> {
      * @param capacity Any elements added beyond this will cause the backing array to be grown.
      * @param arrayType Used for reification of the array type at runtime. */
     @SuppressWarnings("unchecked")
-    public Array (boolean ordered, int capacity, Class arrayType) {
+    public Array (boolean ordered, int capacity, Class<?> arrayType) {
         this.ordered = ordered;
         items = (T[])java.lang.reflect.Array.newInstance(arrayType, capacity);
     }
@@ -117,7 +115,8 @@ public class Array<T> implements Iterable<T> {
         addAll(array.items, start, count);
     }
 
-    public void addAll (T... array) {
+    @SafeVarargs
+    public final void addAll (T... array) {
         addAll(array, 0, array.length);
     }
 
@@ -245,7 +244,6 @@ public class Array<T> implements Iterable<T> {
     /** Reduces the size of the backing array to the size of the actual items. This is useful to release memory when many items
      * have been removed, or if it is known that more items will not be added.
      * @return {@link #items} */
-    @SuppressWarnings("unchecked")
     public T[] shrink () {
         if (items.length != size) resize(size);
         return items;
@@ -254,7 +252,6 @@ public class Array<T> implements Iterable<T> {
     /** Increases the size of the backing array to accommodate the specified number of additional items. Useful before adding many
      * items to avoid multiple backing array resizes.
      * @return {@link #items} */
-    @SuppressWarnings("unchecked")
     public T[] ensureCapacity (int additionalCapacity) {
         if (additionalCapacity < 0) throw new IllegalArgumentException("additionalCapacity must be >= 0: " + additionalCapacity);
         int sizeNeeded = size + additionalCapacity;
@@ -264,7 +261,6 @@ public class Array<T> implements Iterable<T> {
 
     /** Sets the array size, leaving any values beyond the current size undefined.
      * @return {@link #items} */
-    @SuppressWarnings("unchecked")
     public T[] setSize (int newSize) {
         truncate(newSize);
         if (newSize > items.length) resize(Math.max(8, newSize));
@@ -322,12 +318,13 @@ public class Array<T> implements Iterable<T> {
 
     /** Returns the items as an array. Note the array is typed, so the {@link #Array(Class)} constructor must have been used.
      * Otherwise use {@link #toArray(Class)} to specify the array type. */
+    @SuppressWarnings("unchecked")
     public T[] toArray () {
-        return toArray(items.getClass().getComponentType());
+        return (T[])toArray(items.getClass().getComponentType());
     }
 
     @SuppressWarnings("unchecked")
-    public <V> V[] toArray (Class type) {
+    public <V> V[] toArray (Class<V> type) {
         V[] result = (V[])java.lang.reflect.Array.newInstance(type, size);
         System.arraycopy(items, 0, result, 0, size);
         return result;
@@ -349,7 +346,7 @@ public class Array<T> implements Iterable<T> {
         if (object == this) return true;
         if (!ordered) return false;
         if (!(object instanceof Array)) return false;
-        Array array = (Array)object;
+        Array<?> array = (Array<?>)object;
         if (!array.ordered) return false;
         int n = size;
         if (n != array.size) return false;
@@ -398,17 +395,18 @@ public class Array<T> implements Iterable<T> {
     }
 
     /** @see #Array(Object[]) */
+    @SafeVarargs
     static public <T> Array<T> with (T... array) {
-        return new Array(array);
+        return new Array<>(array);
     }
 
     public Iterator<T> iterator () {
-        if (iterable == null) iterable = new ArrayIterable(this);
+        if (iterable == null) iterable = new ArrayIterable<>(this);
         return iterable.iterator();
     }
 
     static public class ArrayIterable<T> implements Iterable<T> {
-        private ArrayIterator iterator1, iterator2;
+        private ArrayIterator<T> iterator1, iterator2;
         private Array<T> array;
 
         public ArrayIterable (Array<T> array) {
@@ -417,8 +415,8 @@ public class Array<T> implements Iterable<T> {
 
         public Iterator<T> iterator () {
             if (iterator1 == null) {
-                iterator1 = new ArrayIterator(array);
-                iterator2 = new ArrayIterator(array);
+                iterator1 = new ArrayIterator<>(array);
+                iterator2 = new ArrayIterator<>(array);
             }
             if (!iterator1.valid) {
                 iterator1.index = 0;
@@ -461,19 +459,16 @@ public class Array<T> implements Iterable<T> {
 
     /** Creates a new array with {@link #items} of the specified type.
      * @param arrayType Use int.class, etc for primitive types. */
-    @SuppressWarnings("unchecked")
-    public Array (Class arrayType) {
+    public Array (Class<T> arrayType) {
         this(true, 16, arrayType);
     }
 
     /** @param array May be null. */
-    @SuppressWarnings("unchecked")
     public Array (T[] array) {
         this(true, array, 0, array.length);
     }
 
     /** @param array May be null. */
-    @SuppressWarnings("unchecked")
     public Array (boolean ordered, T[] array, int startIndex, int count) {
         this(ordered, count, array.getClass().getComponentType());
         size = count;
