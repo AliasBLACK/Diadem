@@ -1,10 +1,16 @@
 # Diadem
 
+<div align="center">
+  <img width="400" height="314" alt="image" style="max-width: 100%; height: auto;" src="https://github.com/user-attachments/assets/e47582d4-24ca-453e-a9ff-3b7801f877bb" />
+</div>
+
+<br>
+
 A minimal desktop **[Three.js](https://github.com/mrdoob/three.js)** implementation powered by **[LWJGL](https://github.com/LWJGL/lwjgl3)** and **[GraalJS](https://github.com/oracle/graaljs)**, providing native WebGL2 rendering without bulky webviews. Perfect for desktop applications that need 3D graphics with JavaScript flexibility, including potential integrations with native libraries like Steam and Twitch APIs.
 
 ## Philosophy
 
-This project is a proof of concept for running [Three.js](https://github.com/mrdoob/three.js) applications natively on desktop without the overhead of browser engines or webviews. By bridging JavaScript WebGL2 calls directly to native OpenGL through [LWJGL](https://github.com/LWJGL/lwjgl3), we achieve:
+This project is a proof of concept for running Three.js applications natively on desktop without the overhead of browser engines or webviews. By bridging JavaScript WebGL2 calls directly to native OpenGL through LWJGL, we achieve:
 
 - **Lightweight**: No Chromium/WebView dependencies
 - **Native Performance**: Direct OpenGL calls via LWJGL
@@ -13,10 +19,10 @@ This project is a proof of concept for running [Three.js](https://github.com/mrd
 
 ## Requirements
 
-- **[GraalVM](https://github.com/oracle/graal) 21** or higher (Community or Enterprise Edition)
-- [Maven](https://github.com/apache/maven) 3.6+
-- [LWJGL](https://github.com/LWJGL/lwjgl3) 3.3.3 (OpenGL, GLFW)
-- [GraalJS](https://github.com/oracle/graaljs) 24.2.2
+- GraalVM 21 or higher (Community or Enterprise Edition)
+- Maven 3.6+
+- LWJGL 3.3.3 (OpenGL, GLFW)
+- GraalJS 24.2.2
 - Windows (configured for Windows natives, but can be adapted for other platforms)
 
 ## Quickstart
