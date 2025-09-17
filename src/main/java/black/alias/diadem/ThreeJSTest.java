@@ -196,7 +196,7 @@ public class ThreeJSTest {
             
             // Load Three.js CJS file
             try {
-                String threeCjsPath = "src/main/resources/three.cjs";
+                String threeCjsPath = "src/main/lib/three.cjs";
                 org.graalvm.polyglot.Source threeCjsSource = org.graalvm.polyglot.Source.newBuilder("js", 
                     new java.io.File(threeCjsPath))
                     .mimeType("application/javascript")

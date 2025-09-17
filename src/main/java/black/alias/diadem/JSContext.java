@@ -51,7 +51,7 @@ public class JSContext implements AutoCloseable {
     
     private String loadBridgeScript() throws IOException {
         // Load the bridge script from resources
-        return new String(Files.readAllBytes(Paths.get("src/main/resources/lwjwebgl.js")));
+        return new String(Files.readAllBytes(Paths.get("src/main/lib/lwjwebgl.js")));
     }
     
     /**
