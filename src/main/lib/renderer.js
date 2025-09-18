@@ -1,10 +1,21 @@
-// Direct access to native methods via Java.type
 const GL11 = Java.type('org.lwjgl.opengl.GL11');
+const GL12 = Java.type('org.lwjgl.opengl.GL12');
+const GL13 = Java.type('org.lwjgl.opengl.GL13');
 const GL15 = Java.type('org.lwjgl.opengl.GL15');
 const GL20 = Java.type('org.lwjgl.opengl.GL20');
 const GL30 = Java.type('org.lwjgl.opengl.GL30');
+const GL31 = Java.type('org.lwjgl.opengl.GL31');
+const GL32 = Java.type('org.lwjgl.opengl.GL32');
+const GL33 = Java.type('org.lwjgl.opengl.GL33');
+const GL40 = Java.type('org.lwjgl.opengl.GL40');
+const GL42 = Java.type('org.lwjgl.opengl.GL42');
+const GL43 = Java.type('org.lwjgl.opengl.GL43');
 const glAdapter = Java.type('black.alias.diadem.Utils.GLAdapter');
 const bufferUtils = Java.type('black.alias.diadem.Utils.BufferUtils');
+
+const ImageIO = Java.type('javax.imageio.ImageIO');
+const ByteArrayInputStream = Java.type('java.io.ByteArrayInputStream');
+const BufferedImage = Java.type('java.awt.image.BufferedImage');
 
 /**
  * WebGL2 Renderer
@@ -12,9 +23,8 @@ const bufferUtils = Java.type('black.alias.diadem.Utils.BufferUtils');
  */
 globalThis.gl = {
 
-	// Core WebGL2 Functions
 	activeTexture: (texture) => {
-		GL11.glActiveTexture(texture ? texture : 0);
+		GL13.glActiveTexture(texture ? texture : 0);
 	},
 
 	attachShader: (program, shader) => {
@@ -31,7 +41,6 @@ globalThis.gl = {
 
 	bufferData: (target, data, usage) => {
 		if (data instanceof ArrayBuffer || data instanceof Float32Array || data instanceof Uint16Array) {
-			// Convert JavaScript typed arrays to Java buffers
 			if (data instanceof Float32Array) {
 				const buffer = bufferUtils.newFloatBuffer(data.length);
 				for (let i = 0; i < data.length; i++) {
@@ -45,7 +54,6 @@ globalThis.gl = {
 				}
 				GL15.glBufferData(target ? target : 0, buffer, usage ? usage : 0);
 			} else {
-				// ArrayBuffer
 				const buffer = bufferUtils.newByteBuffer(data.byteLength);
 				const view = new Uint8Array(data);
 				for (let i = 0; i < view.length; i++) {
@@ -147,14 +155,12 @@ globalThis.gl = {
 	},
 
 	getShaderParameter: (shader, pname) => {
-		// LWJGL glGetShaderiv requires a buffer to store the result
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL20.glGetShaderiv(shader ? shader : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
 	getProgramParameter: (program, pname) => {
-		// LWJGL glGetProgramiv requires a buffer to store the result
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL20.glGetProgramiv(program ? program : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
@@ -174,36 +180,29 @@ globalThis.gl = {
 
 	shaderSource: (shader, source) => {
 		if (source) {
-			// Platform-specific GLSL version translation
 			const platform = Java.type('java.lang.System').getProperty('os.name').toLowerCase();
 			
 			if (platform.includes('mac')) {
-				// macOS: Convert WebGL GLSL ES to desktop GLSL Core Profile
 				source = source.replace(/#version 300 es/g, '#version 330 core');
 				source = source.replace(/precision\s+(lowp|mediump|highp)\s+float\s*;/g, '');
 				source = source.replace(/precision\s+(lowp|mediump|highp)\s+int\s*;/g, '');
 				
-				// Convert WebGL-specific attributes/varyings to desktop GLSL
 				if (source.includes('attribute ')) {
 					source = source.replace(/attribute /g, 'in ');
 				}
 				if (source.includes('varying ')) {
 					if (source.includes('gl_FragColor')) {
-						// Fragment shader
 						source = source.replace(/varying /g, 'in ');
 					} else {
-						// Vertex shader
 						source = source.replace(/varying /g, 'out ');
 					}
 				}
 				
-				// Handle gl_FragColor for Core Profile
 				if (source.includes('gl_FragColor')) {
 					source = 'out vec4 fragColor;\n' + source;
 					source = source.replace(/gl_FragColor/g, 'fragColor');
 				}
 			} else {
-				// Windows/Linux: More flexible, but still convert for consistency
 				source = source.replace(/#version 300 es/g, '#version 430 core');
 				source = source.replace(/precision\s+(lowp|mediump|highp)\s+float\s*;/g, '');
 				source = source.replace(/precision\s+(lowp|mediump|highp)\s+int\s*;/g, '');
@@ -215,20 +214,15 @@ globalThis.gl = {
 
 	texImage2D: (target, level, internalformat, width, height, border, format, type, pixels) => {
 		if (arguments.length === 6) {
-			// texImage2D(target, level, internalformat, format, type, source)
-			// For the 6-parameter version, pass null for pixels
 			glAdapter.glTexImage2D(target ? target : 0, level ? level : 0, internalformat ? internalformat : 0, width ? width : 0, height ? height : 0, format ? format : 0, null);
 		} else {
-			// For null/undefined pixels, pass null directly
 			if (pixels === null || pixels === undefined) {
 				glAdapter.glTexImage2D(target ? target : 0, level ? level : 0, internalformat ? internalformat : 0, 
 					width ? width : 0, height ? height : 0, border ? border : 0, format ? format : 0, type ? type : 0, null);
 			} else {
-				// Convert JavaScript typed array to Java ByteBuffer using BufferUtils
 				let buffer = null;
 				if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
-					// Handle JavaScript typed arrays by converting to ByteBuffer
-					buffer = bufferUtils.newByteBuffer(pixels.length * 4); // Assume 4 bytes per element for safety
+					buffer = bufferUtils.newByteBuffer(pixels.length * 4);
 					for (let i = 0; i < pixels.length; i++) {
 						buffer.putFloat(pixels[i]);
 					}
@@ -245,7 +239,7 @@ globalThis.gl = {
 	},
 
 	uniform1f: (location, value) => {
-		GL20.glUniform1f(location ? location : -1, value ? value : 0.0);
+		glAdapter.glUniform1f(location ? location : -1, value ? value : 0.0);
 	},
 
 	uniform1i: (location, value) => {
@@ -253,21 +247,92 @@ globalThis.gl = {
 	},
 
 	uniform2f: (location, x, y) => {
-		GL20.glUniform2f(location ? location : -1, x ? x : 0.0, y ? y : 0.0);
+		glAdapter.glUniform2f(location ? location : -1, x ? x : 0.0, y ? y : 0.0);
 	},
 
 	uniform3f: (location, x, y, z) => {
-		GL20.glUniform3f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0);
+		glAdapter.glUniform3f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0);
 	},
 
 	uniform4f: (location, x, y, z, w) => {
-		GL20.glUniform4f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0, w ? w : 0.0);
+		glAdapter.glUniform4f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0, w ? w : 0.0);
+	},
+
+	uniform1fv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniform1fv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform2fv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniform2fv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform3fv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniform3fv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform4fv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniform4fv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform1iv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createIntBuffer(value);
+			glAdapter.glUniform1iv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform2iv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createIntBuffer(value);
+			glAdapter.glUniform2iv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform3iv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createIntBuffer(value);
+			glAdapter.glUniform3iv(location ? location : -1, buffer);
+		}
+	},
+
+	uniform4iv: (location, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createIntBuffer(value);
+			glAdapter.glUniform4iv(location ? location : -1, buffer);
+		}
+	},
+
+	uniformMatrix2fv: (location, transpose, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniformMatrix2fv(location ? location : -1, transpose ? transpose : false, buffer);
+		}
+	},
+
+	uniformMatrix3fv: (location, transpose, value) => {
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniformMatrix3fv(location ? location : -1, transpose ? transpose : false, buffer);
+		}
 	},
 
 	uniformMatrix4fv: (location, transpose, value) => {
-		// LWJGL glUniformMatrix4fv takes (location, count, transpose, value)
-		// WebGL uniformMatrix4fv takes (location, transpose, value)
-		GL20.glUniformMatrix4fv(location ? location : -1, transpose ? transpose : false, value);
+		if (value && value.length) {
+			const buffer = glAdapter.createFloatBuffer(value);
+			glAdapter.glUniformMatrix4fv(location ? location : -1, transpose ? transpose : false, buffer);
+		}
 	},
 
 	useProgram: (program) => {
@@ -278,11 +343,221 @@ globalThis.gl = {
 		GL20.glVertexAttribPointer(index ? index : 0, size ? size : 0, type ? type : 0, normalized ? normalized : false, stride ? stride : 0, offset ? offset : 0);
 	},
 
+	texImage2D: function() {
+		if (arguments.length === 6) {
+			const target = arguments[0];
+			const level = arguments[1];
+			const internalformat = arguments[2];
+			const format = arguments[3];
+			const type = arguments[4];
+			const source = arguments[5];
+			
+			if (source && source.width && source.height && (source.data || source.constructor?.name === 'ImageBitmap')) {
+				const textureData = new Uint8Array(source.width * source.height * 4);
+				
+				const imageData = source.data;
+				if (imageData) {
+					for (let y = 0; y < source.height; y++) {
+						for (let x = 0; x < source.width; x++) {
+							const pixelIndex = (y * source.width + x) * 4;
+							const dataIndex = ((y * source.width + x) % imageData.length);
+							
+							const r = imageData[dataIndex % imageData.length];
+							const g = imageData[(dataIndex + 1) % imageData.length];
+							const b = imageData[(dataIndex + 2) % imageData.length];
+							
+							textureData[pixelIndex] = r;     // R
+							textureData[pixelIndex + 1] = g; // G
+							textureData[pixelIndex + 2] = b; // B
+							textureData[pixelIndex + 3] = 255; // A (fully opaque)
+						}
+					}
+				} else {
+					for (let i = 0; i < textureData.length; i += 4) {
+						textureData[i] = 255;
+						textureData[i + 1] = 0;
+						textureData[i + 2] = 255;
+						textureData[i + 3] = 255;
+					}
+				}
+				
+				// Convert to Java buffer
+				const buffer = bufferUtils.newByteBuffer(textureData.length);
+				for (let i = 0; i < textureData.length; i++) {
+					buffer.put(i, textureData[i]);
+				}
+				
+				GL11.glTexImage2D(target, level, internalformat, source.width, source.height, 0, format, type, buffer);
+				return;
+			}
+		} else if (arguments.length === 9) {
+			const target = arguments[0];
+			const level = arguments[1];
+			const internalformat = arguments[2];
+			const width = arguments[3];
+			const height = arguments[4];
+			const border = arguments[5];
+			const format = arguments[6];
+			const type = arguments[7];
+			const pixels = arguments[8];
+			
+			if (pixels === null || pixels === undefined) {
+				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, null);
+			} else if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
+				const buffer = bufferUtils.newByteBuffer(pixels.length);
+				for (let i = 0; i < pixels.length; i++) {
+					buffer.put(i, pixels[i] & 0xFF);
+				}
+				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, buffer);
+			} else {
+				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+			}
+			return;
+		}
+		
+		GL11.glTexImage2D(0, 0, 0, 0, 0, 0, 0, 0, null);
+	},
+
+	texParameteri: (target, pname, param) => {
+		GL11.glTexParameteri(target ? target : 0, pname ? pname : 0, param ? param : 0);
+	},
+
+	generateMipmap: (target) => {
+		GL30.glGenerateMipmap(target ? target : 0);
+	},
+
+	texSubImage2D: function() {
+		if (arguments.length === 0) return;
+		
+		if (arguments.length === 7) {
+			const target = arguments[0];
+			const level = arguments[1];
+			const xoffset = arguments[2];
+			const yoffset = arguments[3];
+			const format = arguments[4];
+			const type = arguments[5];
+			const source = arguments[6];
+			
+			let width = source.width || source.naturalWidth;
+			let height = source.height || source.naturalHeight;
+			
+			if (width && height && source._data) {
+				let textureData = null;
+				
+				try {
+					if (source._data instanceof ArrayBuffer) {
+						const uint8Array = new Uint8Array(source._data);
+						const signedBytes = Array.from(uint8Array).map(b => b > 127 ? b - 256 : b);
+						const javaBytes = Java.to(signedBytes, 'byte[]');
+						const inputStream = new ByteArrayInputStream(javaBytes);
+						const bufferedImage = ImageIO.read(inputStream);
+						
+						if (bufferedImage) {
+							const imgWidth = bufferedImage.getWidth();
+							const imgHeight = bufferedImage.getHeight();
+							const pixelCount = imgWidth * imgHeight;
+							textureData = new Uint8Array(pixelCount * 4);
+							
+							for (let y = 0; y < imgHeight; y++) {
+								for (let x = 0; x < imgWidth; x++) {
+									const rgb = bufferedImage.getRGB(x, y);
+									const pixelIndex = (y * imgWidth + x) * 4;
+									const a = (rgb >> 24) & 0xFF;
+									const r = (rgb >> 16) & 0xFF;
+									const g = (rgb >> 8) & 0xFF;
+									const b = rgb & 0xFF;
+									
+									textureData[pixelIndex] = r;
+									textureData[pixelIndex + 1] = g;
+									textureData[pixelIndex + 2] = b;
+									textureData[pixelIndex + 3] = a || 255;
+								}
+							}
+							width = imgWidth;
+							height = imgHeight;
+						}
+					}
+				} catch (e) {
+					const pixelCount = width * height;
+					textureData = new Uint8Array(pixelCount * 4);
+					const checkSize = 32;
+					for (let y = 0; y < height; y++) {
+						for (let x = 0; x < width; x++) {
+							const pixelIndex = (y * width + x) * 4;
+							const checkX = Math.floor(x / checkSize);
+							const checkY = Math.floor(y / checkSize);
+							const isEven = (checkX + checkY) % 2 === 0;
+							
+							if (isEven) {
+								textureData[pixelIndex] = 255; textureData[pixelIndex + 1] = 0; textureData[pixelIndex + 2] = 0; textureData[pixelIndex + 3] = 255;
+							} else {
+								textureData[pixelIndex] = 0; textureData[pixelIndex + 1] = 0; textureData[pixelIndex + 2] = 255; textureData[pixelIndex + 3] = 255;
+							}
+						}
+					}
+				}
+				
+				if (textureData) {
+					const buffer = bufferUtils.newByteBuffer(textureData.length);
+					for (let i = 0; i < textureData.length; i++) {
+						let byteValue = textureData[i] & 0xFF;
+						if (byteValue > 127) {
+							byteValue = byteValue - 256;
+						}
+						buffer.put(i, byteValue);
+					}
+					
+					const storageSize = width * height * 4;
+					const nullBuffer = bufferUtils.newByteBuffer(storageSize);
+					for (let i = 0; i < storageSize; i++) {
+						nullBuffer.put(i, 0);
+					}
+					GL11.glTexImage2D(target, level, format, width, height, 0, format, type, nullBuffer);
+					GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, buffer);
+				}
+			}
+		} else if (arguments.length === 9) {
+			const target = arguments[0];
+			const level = arguments[1];
+			const xoffset = arguments[2];
+			const yoffset = arguments[3];
+			const width = arguments[4];
+			const height = arguments[5];
+			const format = arguments[6];
+			const type = arguments[7];
+			const pixels = arguments[8];
+			
+			if (pixels && pixels instanceof Uint8Array) {
+				const buffer = bufferUtils.newByteBuffer(pixels.length);
+				for (let i = 0; i < pixels.length; i++) {
+					let byteValue = pixels[i] & 0xFF;
+					if (byteValue > 127) {
+						byteValue = byteValue - 256;
+					}
+					buffer.put(i, byteValue);
+				}
+				
+				// Allocate texture storage first
+				const storageSize = width * height * 4;
+				const nullBuffer = bufferUtils.newByteBuffer(storageSize);
+				for (let i = 0; i < storageSize; i++) {
+					nullBuffer.put(i, 0);
+				}
+				GL11.glTexImage2D(target, level, format, width, height, 0, format, type, nullBuffer);
+				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, buffer);
+			} else if (pixels) {
+				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+			}
+		}
+	},
+
+	compressedTexSubImage2D: function() {
+	},
+
 	viewport: (x, y, width, height) => {
 		GL11.glViewport(x ? x : 0, y ? y : 0, width ? width : 0, height ? height : 0);
 	},
 
-	// WebGL2 specific functions
 	bindVertexArray: (vertexArray) => {
 		GL30.glBindVertexArray(vertexArray ? vertexArray : 0);
 	},
@@ -317,58 +592,41 @@ globalThis.gl = {
 	},
 
 	texSubImage3D: (target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels) => {
-		// WebGL2 3D texture support - use GL12 for 3D textures
-		GL12 = GL12 || Java.type('org.lwjgl.opengl.GL12');
 		GL12.glTexSubImage3D(target ? target : 0, level ? level : 0, xoffset ? xoffset : 0, yoffset ? yoffset : 0, zoffset ? zoffset : 0, width ? width : 0, height ? height : 0, depth ? depth : 0, format ? format : 0, type ? type : 0, pixels);
 	},
 
 	drawArraysInstanced: (mode, first, count, instanceCount) => {
-		// WebGL2 instanced rendering - use GL31 for instanced drawing
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		GL31.glDrawArraysInstanced(mode ? mode : 0, first ? first : 0, count ? count : 0, instanceCount ? instanceCount : 0);
 	},
 
 	drawElementsInstanced: (mode, count, type, offset, instanceCount) => {
-		// WebGL2 instanced rendering - use GL31 for instanced drawing
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		GL31.glDrawElementsInstanced(mode ? mode : 0, count ? count : 0, type ? type : 0, offset ? offset : 0, instanceCount ? instanceCount : 0);
 	},
 
-	// Transform feedback
 	beginTransformFeedback: (primitiveMode) => {
-		// WebGL2 transform feedback - use GL30 for transform feedback
 		GL30.glBeginTransformFeedback(primitiveMode ? primitiveMode : 0);
 	},
 
 	endTransformFeedback: () => {
-		// WebGL2 transform feedback - use GL30 for transform feedback
 		GL30.glEndTransformFeedback();
 	},
 
-	// Uniform buffer objects
 	bindBufferBase: (target, index, buffer) => {
-		// WebGL2 uniform buffer objects - use GL30 for UBOs
 		GL30.glBindBufferBase(target ? target : 0, index ? index : 0, buffer ? buffer : 0);
 	},
 
 	bindBufferRange: (target, index, buffer, offset, size) => {
-		// WebGL2 uniform buffer objects - use GL30 for UBOs
 		GL30.glBindBufferRange(target ? target : 0, index ? index : 0, buffer ? buffer : 0, offset ? offset : 0, size ? size : 0);
 	},
 
 	getUniformBlockIndex: (program, uniformBlockName) => {
-		// WebGL2 uniform buffer objects - use GL31 for uniform blocks
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		return GL31.glGetUniformBlockIndex(program ? program : 0, uniformBlockName ? uniformBlockName : "");
 	},
 
 	uniformBlockBinding: (program, uniformBlockIndex, uniformBlockBinding) => {
-		// WebGL2 uniform buffer objects - use GL31 for uniform blocks
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		GL31.glUniformBlockBinding(program ? program : 0, uniformBlockIndex ? uniformBlockIndex : 0, uniformBlockBinding ? uniformBlockBinding : 0);
 	},
 
-	// HIGH PRIORITY: Buffer operations
 	bufferSubData: (target, offset, data) => {
 		if (data instanceof Float32Array) {
 			const buffer = bufferUtils.newFloatBuffer(data.length);
@@ -417,22 +675,17 @@ globalThis.gl = {
 	},
 
 	copyBufferSubData: (readTarget, writeTarget, readOffset, writeOffset, size) => {
-		// WebGL2 buffer copy - use GL31
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		GL31.glCopyBufferSubData(readTarget ? readTarget : 0, writeTarget ? writeTarget : 0, 
 			readOffset ? readOffset : 0, writeOffset ? writeOffset : 0, size ? size : 0);
 	},
 
-	// HIGH PRIORITY: Drawing functions
 	drawRangeElements: (mode, start, end, count, type, offset) => {
-		// WebGL2 optimized indexed drawing - use GL12
-		GL12 = GL12 || Java.type('org.lwjgl.opengl.GL12');
+		
 		GL12.glDrawRangeElements(mode ? mode : 0, start ? start : 0, end ? end : 0, 
 			count ? count : 0, type ? type : 0, offset ? offset : 0);
 	},
 
 	drawBuffers: (buffers) => {
-		// WebGL2 multiple render targets - use GL20
 		if (buffers && buffers.length) {
 			const buffer = bufferUtils.newIntBuffer(buffers.length);
 			for (let i = 0; i < buffers.length; i++) {
@@ -443,7 +696,6 @@ globalThis.gl = {
 	},
 
 	clearBufferfv: (buffer, drawbuffer, value) => {
-		// WebGL2 clear specific buffer with float values - use GL30
 		if (value && value.length) {
 			const floatBuffer = bufferUtils.newFloatBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
@@ -454,7 +706,6 @@ globalThis.gl = {
 	},
 
 	clearBufferiv: (buffer, drawbuffer, value) => {
-		// WebGL2 clear specific buffer with int values - use GL30
 		if (value && value.length) {
 			const intBuffer = bufferUtils.newIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
@@ -465,7 +716,6 @@ globalThis.gl = {
 	},
 
 	clearBufferuiv: (buffer, drawbuffer, value) => {
-		// WebGL2 clear specific buffer with uint values - use GL30
 		if (value && value.length) {
 			const intBuffer = bufferUtils.newIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
@@ -476,62 +726,49 @@ globalThis.gl = {
 	},
 
 	clearBufferfi: (buffer, drawbuffer, depth, stencil) => {
-		// WebGL2 clear depth-stencil buffer - use GL30
 		GL30.glClearBufferfi(buffer ? buffer : 0, drawbuffer ? drawbuffer : 0, 
 			depth !== undefined ? depth : 1.0, stencil !== undefined ? stencil : 0);
 	},
 
-	// HIGH PRIORITY: Vertex attributes
 	vertexAttribDivisor: (index, divisor) => {
-		// WebGL2 instanced vertex attributes - use GL33
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		GL33.glVertexAttribDivisor(index ? index : 0, divisor ? divisor : 0);
 	},
 
 	vertexAttribIPointer: (index, size, type, stride, offset) => {
-		// WebGL2 integer vertex attributes - use GL30
 		GL30.glVertexAttribIPointer(index ? index : 0, size ? size : 0, type ? type : 0, 
 			stride ? stride : 0, offset ? offset : 0);
 	},
 
 	vertexAttribI4i: (index, x, y, z, w) => {
-		// WebGL2 integer vertex attribute values - use GL30
 		GL30.glVertexAttribI4i(index ? index : 0, x ? x : 0, y ? y : 0, z ? z : 0, w ? w : 0);
 	},
 
 	vertexAttribI4ui: (index, x, y, z, w) => {
-		// WebGL2 unsigned integer vertex attribute values - use GL30
 		GL30.glVertexAttribI4ui(index ? index : 0, x ? x : 0, y ? y : 0, z ? z : 0, w ? w : 0);
 	},
 
 	vertexAttribI4iv: (index, v) => {
-		// WebGL2 integer vertex attribute vector - use GL30
 		if (v && v.length >= 4) {
 			GL30.glVertexAttribI4i(index ? index : 0, v[0], v[1], v[2], v[3]);
 		}
 	},
 
 	vertexAttribI4uiv: (index, v) => {
-		// WebGL2 unsigned integer vertex attribute vector - use GL30
 		if (v && v.length >= 4) {
 			GL30.glVertexAttribI4ui(index ? index : 0, v[0], v[1], v[2], v[3]);
 		}
 	},
 
-	// HIGH PRIORITY: Validation functions
 	isVertexArray: (vertexArray) => {
-		// WebGL2 VAO validation - use GL30
 		return GL30.glIsVertexArray(vertexArray ? vertexArray : 0);
 	},
 
 	getIndexedParameter: (target, index) => {
-		// WebGL2 indexed parameter queries - use GL30
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL30.glGetIntegeri_v(target ? target : 0, index ? index : 0, buffer);
 		return buffer.get(0);
 	},
 
-	// MISSING BASIC WebGL functions that Three.js requires
 	frontFace: (mode) => {
 		GL11.glFrontFace(mode ? mode : 0);
 	},
@@ -545,12 +782,12 @@ globalThis.gl = {
 	},
 
 	blendFuncSeparate: (srcRGB, dstRGB, srcAlpha, dstAlpha) => {
-		GL14 = GL14 || Java.type('org.lwjgl.opengl.GL14');
+		
 		GL14.glBlendFuncSeparate(srcRGB ? srcRGB : 0, dstRGB ? dstRGB : 0, srcAlpha ? srcAlpha : 0, dstAlpha ? dstAlpha : 0);
 	},
 
 	blendEquation: (mode) => {
-		GL14 = GL14 || Java.type('org.lwjgl.opengl.GL14');
+		
 		GL14.glBlendEquation(mode ? mode : 0);
 	},
 
@@ -559,7 +796,7 @@ globalThis.gl = {
 	},
 
 	blendColor: (red, green, blue, alpha) => {
-		GL14 = GL14 || Java.type('org.lwjgl.opengl.GL14');
+		
 		glAdapter.glBlendColor(red, green, blue, alpha);
 	},
 
@@ -594,14 +831,12 @@ globalThis.gl = {
 	},
 
 	stencilMask: (mask) => {
-		// Convert JavaScript number to proper Java int using Java Integer class
 		const Integer = Java.type('java.lang.Integer');
 		const intMask = mask ? Integer.valueOf(Math.floor(mask) & 0xFFFFFFFF) : 0;
 		GL11.glStencilMask(intMask);
 	},
 
 	stencilMaskSeparate: (face, mask) => {
-		// Convert JavaScript number to proper Java int using Java Integer class
 		const Integer = Java.type('java.lang.Integer');
 		const intMask = mask ? Integer.valueOf(Math.floor(mask) & 0xFFFFFFFF) : 0;
 		GL20.glStencilMaskSeparate(face, intMask);
@@ -616,7 +851,6 @@ globalThis.gl = {
 	},
 
 	sampleCoverage: (value, invert) => {
-		GL13 = GL13 || Java.type('org.lwjgl.opengl.GL13');
 		GL13.glSampleCoverage(value !== undefined ? value : 1.0, invert ? invert : false);
 	},
 
@@ -629,7 +863,11 @@ globalThis.gl = {
 	},
 
 	pixelStorei: (pname, param) => {
-		GL11.glPixelStorei(pname ? pname : 0, param ? param : 0);
+		let intParam = param;
+		if (typeof param === 'boolean') {
+			intParam = param ? 1 : 0;
+		}
+		GL11.glPixelStorei(pname ? pname : 0, intParam ? intParam : 0);
 	},
 
 	readPixels: (x, y, width, height, format, type, pixels) => {
@@ -655,105 +893,85 @@ globalThis.gl = {
 		}
 	},
 
-	// MEDIUM PRIORITY: Query objects (performance monitoring)
 	createQuery: () => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		return GL15.glGenQueries();
 	},
 
 	deleteQuery: (query) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		GL15.glDeleteQueries(query ? query : 0);
 	},
 
 	isQuery: (query) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		return GL15.glIsQuery(query ? query : 0);
 	},
 
 	beginQuery: (target, query) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		GL15.glBeginQuery(target ? target : 0, query ? query : 0);
 	},
 
 	endQuery: (target) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		GL15.glEndQuery(target ? target : 0);
 	},
 
 	getQuery: (target, pname) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL15.glGetQueryiv(target ? target : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
 	getQueryParameter: (query, pname) => {
-		GL15 = GL15 || Java.type('org.lwjgl.opengl.GL15');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL15.glGetQueryObjectiv(query ? query : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
-	// MEDIUM PRIORITY: Sampler objects (advanced texture sampling)
 	createSampler: () => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		return GL33.glGenSamplers();
 	},
 
 	deleteSampler: (sampler) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		GL33.glDeleteSamplers(sampler ? sampler : 0);
 	},
 
 	bindSampler: (unit, sampler) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		GL33.glBindSampler(unit ? unit : 0, sampler ? sampler : 0);
 	},
 
 	isSampler: (sampler) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		return GL33.glIsSampler(sampler ? sampler : 0);
 	},
 
 	samplerParameteri: (sampler, pname, param) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		GL33.glSamplerParameteri(sampler ? sampler : 0, pname ? pname : 0, param ? param : 0);
 	},
 
 	samplerParameterf: (sampler, pname, param) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		GL33.glSamplerParameterf(sampler ? sampler : 0, pname ? pname : 0, param !== undefined ? param : 0.0);
 	},
 
 	getSamplerParameter: (sampler, pname) => {
-		GL33 = GL33 || Java.type('org.lwjgl.opengl.GL33');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL33.glGetSamplerParameteriv(sampler ? sampler : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
-	// MEDIUM PRIORITY: Texture storage and operations
 	texStorage2D: (target, levels, internalformat, width, height) => {
-		GL42 = GL42 || Java.type('org.lwjgl.opengl.GL42');
 		GL42.glTexStorage2D(target ? target : 0, levels ? levels : 0, internalformat ? internalformat : 0, 
 			width ? width : 0, height ? height : 0);
 	},
 
 	texStorage3D: (target, levels, internalformat, width, height, depth) => {
-		GL42 = GL42 || Java.type('org.lwjgl.opengl.GL42');
 		GL42.glTexStorage3D(target ? target : 0, levels ? levels : 0, internalformat ? internalformat : 0, 
 			width ? width : 0, height ? height : 0, depth ? depth : 0);
 	},
 
 	copyTexSubImage3D: (target, level, xoffset, yoffset, zoffset, x, y, width, height) => {
-		GL12 = GL12 || Java.type('org.lwjgl.opengl.GL12');
+		
 		GL12.glCopyTexSubImage3D(target ? target : 0, level ? level : 0, xoffset ? xoffset : 0, 
 			yoffset ? yoffset : 0, zoffset ? zoffset : 0, x ? x : 0, y ? y : 0, width ? width : 0, height ? height : 0);
 	},
 
 	compressedTexImage3D: (target, level, internalformat, width, height, depth, border, imageSize, data) => {
-		GL13 = GL13 || Java.type('org.lwjgl.opengl.GL13');
 		if (data && data.length) {
 			const buffer = bufferUtils.newByteBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
@@ -768,7 +986,6 @@ globalThis.gl = {
 	},
 
 	compressedTexSubImage3D: (target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data) => {
-		GL13 = GL13 || Java.type('org.lwjgl.opengl.GL13');
 		if (data && data.length) {
 			const buffer = bufferUtils.newByteBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
@@ -784,18 +1001,13 @@ globalThis.gl = {
 		}
 	},
 
-	// MEDIUM PRIORITY: Programs and shaders
 	getFragDataLocation: (program, name) => {
 		GL30.glGetFragDataLocation(program ? program : 0, name ? name : "");
 	},
 
-	// MEDIUM PRIORITY: Uniform buffer objects
 	getUniformIndices: (program, uniformNames) => {
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		if (uniformNames && uniformNames.length) {
 			const buffer = bufferUtils.newIntBuffer(uniformNames.length);
-			// Note: LWJGL requires different approach for string arrays
-			// is a simplified implementation
 			for (let i = 0; i < uniformNames.length; i++) {
 				const index = GL31.glGetUniformIndex(program ? program : 0, uniformNames[i]);
 				buffer.put(i, index);
@@ -810,7 +1022,6 @@ globalThis.gl = {
 	},
 
 	getActiveUniforms: (program, uniformIndices, pname) => {
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		if (uniformIndices && uniformIndices.length) {
 			const indexBuffer = bufferUtils.newIntBuffer(uniformIndices.length);
 			for (let i = 0; i < uniformIndices.length; i++) {
@@ -828,35 +1039,28 @@ globalThis.gl = {
 	},
 
 	getActiveUniformBlockParameter: (program, uniformBlockIndex, pname) => {
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL31.glGetActiveUniformBlockiv(program ? program : 0, uniformBlockIndex ? uniformBlockIndex : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
 	getActiveUniformBlockName: (program, uniformBlockIndex) => {
-		GL31 = GL31 || Java.type('org.lwjgl.opengl.GL31');
 		return GL31.glGetActiveUniformBlockName(program ? program : 0, uniformBlockIndex ? uniformBlockIndex : 0);
 	},
 
-	// LOW PRIORITY: Transform feedback (advanced geometry processing)
 	createTransformFeedback: () => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		return GL40.glGenTransformFeedbacks();
 	},
 
 	deleteTransformFeedback: (transformFeedback) => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		GL40.glDeleteTransformFeedbacks(transformFeedback ? transformFeedback : 0);
 	},
 
 	isTransformFeedback: (transformFeedback) => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		return GL40.glIsTransformFeedback(transformFeedback ? transformFeedback : 0);
 	},
 
 	bindTransformFeedback: (target, transformFeedback) => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		GL40.glBindTransformFeedback(target ? target : 0, transformFeedback ? transformFeedback : 0);
 	},
 
@@ -869,49 +1073,39 @@ globalThis.gl = {
 	},
 
 	pauseTransformFeedback: () => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		GL40.glPauseTransformFeedback();
 	},
 
 	resumeTransformFeedback: () => {
-		GL40 = GL40 || Java.type('org.lwjgl.opengl.GL40');
 		GL40.glResumeTransformFeedback();
 	},
 
-	// LOW PRIORITY: Sync objects (GPU synchronization)
 	fenceSync: (condition, flags) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		return GL32.glFenceSync(condition ? condition : 0, flags ? flags : 0);
 	},
 
 	isSync: (sync) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		return GL32.glIsSync(sync ? sync : 0);
 	},
 
 	deleteSync: (sync) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		GL32.glDeleteSync(sync ? sync : 0);
 	},
 
 	clientWaitSync: (sync, flags, timeout) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		return GL32.glClientWaitSync(sync ? sync : 0, flags ? flags : 0, timeout ? timeout : 0);
 	},
 
 	waitSync: (sync, flags, timeout) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		GL32.glWaitSync(sync ? sync : 0, flags ? flags : 0, timeout ? timeout : 0);
 	},
 
 	getSyncParameter: (sync, pname) => {
-		GL32 = GL32 || Java.type('org.lwjgl.opengl.GL32');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL32.glGetSynciv(sync ? sync : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
-	// LOW PRIORITY: Framebuffer operations
 	blitFramebuffer: (srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter) => {
 		GL30.glBlitFramebuffer(srcX0 ? srcX0 : 0, srcY0 ? srcY0 : 0, srcX1 ? srcX1 : 0, srcY1 ? srcY1 : 0,
 			dstX0 ? dstX0 : 0, dstY0 ? dstY0 : 0, dstX1 ? dstX1 : 0, dstY1 ? dstY1 : 0, mask ? mask : 0, filter ? filter : 0);
@@ -923,7 +1117,6 @@ globalThis.gl = {
 	},
 
 	invalidateFramebuffer: (target, attachments) => {
-		GL43 = GL43 || Java.type('org.lwjgl.opengl.GL43');
 		if (attachments && attachments.length) {
 			const buffer = bufferUtils.newIntBuffer(attachments.length);
 			for (let i = 0; i < attachments.length; i++) {
@@ -934,7 +1127,6 @@ globalThis.gl = {
 	},
 
 	invalidateSubFramebuffer: (target, attachments, x, y, width, height) => {
-		GL43 = GL43 || Java.type('org.lwjgl.opengl.GL43');
 		if (attachments && attachments.length) {
 			const buffer = bufferUtils.newIntBuffer(attachments.length);
 			for (let i = 0; i < attachments.length; i++) {
@@ -949,9 +1141,7 @@ globalThis.gl = {
 		GL11.glReadBuffer(mode ? mode : 0);
 	},
 
-	// LOW PRIORITY: Renderbuffer operations
 	getInternalformatParameter: (target, internalformat, pname) => {
-		GL42 = GL42 || Java.type('org.lwjgl.opengl.GL42');
 		const buffer = bufferUtils.newIntBuffer(1);
 		GL42.glGetInternalformativ(target ? target : 0, internalformat ? internalformat : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
@@ -962,7 +1152,6 @@ globalThis.gl = {
 			internalformat ? internalformat : 0, width ? width : 0, height ? height : 0);
 	},
 
-	// LOW PRIORITY: Additional uniform functions
 	uniform1ui: (location, v0) => {
 		GL30.glUniform1ui(location ? location : -1, v0 ? v0 : 0);
 	},
@@ -1019,7 +1208,6 @@ globalThis.gl = {
 		}
 	},
 
-	// LOW PRIORITY: Additional matrix uniform functions
 	uniformMatrix2x3fv: (location, transpose, data) => {
 		const buffer = gl.convertToFloatBuffer(data);
 		GL21.glUniformMatrix2x3fv(location, transpose, buffer);
@@ -1050,9 +1238,7 @@ globalThis.gl = {
 		GL21.glUniformMatrix4x3fv(location, transpose, buffer);
 	},
 
-	// ===== FRAMEBUFFER AND RENDERBUFFER FUNCTIONS =====
 	
-	// Framebuffer functions
 	createFramebuffer: () => {
 		return GL30.glGenFramebuffers();
 	},
@@ -1089,7 +1275,6 @@ globalThis.gl = {
 		return buffer.get(0);
 	},
 
-	// Renderbuffer functions
 	createRenderbuffer: () => {
 		return GL30.glGenRenderbuffers();
 	},
@@ -1118,7 +1303,6 @@ globalThis.gl = {
 		return buffer.get(0);
 	},
 
-	// ===== SHADER UNIFORM AND ATTRIBUTE FUNCTIONS =====
 	
 	getActiveUniform: (program, index) => {
 		const nameBuffer = bufferUtils.newByteBuffer(256);
@@ -1212,7 +1396,6 @@ globalThis.gl = {
 		return String.fromCharCode.apply(null, logBytes);
 	},
 
-	// ===== BUFFER CONVERSION HELPER =====
 	
 	convertToFloatBuffer: (data) => {
 		if (!data) return null;
@@ -1224,7 +1407,6 @@ globalThis.gl = {
 		return buffer;
 	},
 
-	// ===== BASIC UNIFORM MATRIX FUNCTIONS =====
 	
 	uniformMatrix2fv: (location, transpose, data) => {
 		const buffer = gl.convertToFloatBuffer(data);
@@ -1241,7 +1423,6 @@ globalThis.gl = {
 		GL20.glUniformMatrix4fv(location, transpose, buffer);
 	},
 
-	// Context attributes method required by Three.js
 	getContextAttributes: () => ({
 		alpha: true,
 		antialias: true,
@@ -1254,9 +1435,7 @@ globalThis.gl = {
 		desynchronized: false
 	}),
 	
-	// Extension support method required by Three.js
 	getExtension: (name) => {
-		// Return fake extension objects for common WebGL extensions
 		switch(name) {
 			case 'WEBGL_debug_renderer_info':
 				return {
@@ -1295,9 +1474,7 @@ globalThis.gl = {
 		}
 	},
 	
-	// Shader precision format method required by Three.js
 	getShaderPrecisionFormat: (shaderType, precisionType) => {
-		// Return fake precision format info
 		return {
 			rangeMin: 127,
 			rangeMax: 127,
@@ -1305,62 +1482,60 @@ globalThis.gl = {
 		};
 	},
 	
-	// Parameter query method required by Three.js
 	getParameter: (pname) => {
 		if (pname === undefined || pname === null) {
 			return 0;
 		}
-		// Return appropriate values for common WebGL parameters
 		switch(pname) {
-			case 0x1F00: // GL_VENDOR
+			case 0x1F00:
 				return 'LWJGL';
-			case 0x1F01: // GL_RENDERER
+			case 0x1F01:
 				return 'LWJGL OpenGL Renderer';
-			case 0x1F02: // GL_VERSION
+			case 0x1F02:
 				return 'WebGL 2.0 (OpenGL ES 3.0 Chromium)';
-			case 0x8B8C: // GL_SHADING_LANGUAGE_VERSION
+			case 0x8B8C:
 				return 'WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)';
-			case 0x0D33: // GL_MAX_TEXTURE_SIZE
+			case 0x0D33:
 				return 16384;
-			case 0x851C: // GL_MAX_RENDERBUFFER_SIZE
+			case 0x851C:
 				return 16384;
-			case 0x80E9: // GL_MAX_TEXTURE_IMAGE_UNITS
+			case 0x80E9:
 				return 32;
-			case 0x8872: // GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS
+			case 0x8872:
 				return 32;
-			case 0x8B4D: // GL_MAX_VERTEX_UNIFORM_VECTORS
+			case 0x8B4D:
 				return 1024;
-			case 0x8DFD: // GL_MAX_VARYING_VECTORS
+			case 0x8DFD:
 				return 30;
-			case 0x8B4C: // GL_MAX_FRAGMENT_UNIFORM_VECTORS
+			case 0x8B4C:
 				return 1024;
-			case 0x8869: // GL_MAX_VERTEX_ATTRIBS
+			case 0x8869:
 				return 16;
-			case 0x8DFB: // GL_MAX_VIEWPORT_DIMS
+			case 0x8DFB:
 				return new Int32Array([16384, 16384]);
-			case 0x846D: // GL_ALIASED_POINT_SIZE_RANGE
+			case 0x846D:
 				return new Float32Array([1, 1024]);
-			case 0x846E: // GL_ALIASED_LINE_WIDTH_RANGE
+			case 0x846E:
 				return new Float32Array([1, 1]);
-			case 0x8073: // GL_DEPTH_BITS
+			case 0x8073:
 				return 24;
-			case 0x8D48: // GL_STENCIL_BITS
+			case 0x8D48:
 				return 8;
-			case 0x8D50: // GL_RED_BITS
-			case 0x8D51: // GL_GREEN_BITS
-			case 0x8D52: // GL_BLUE_BITS
+			case 0x8D50:
+			case 0x8D51:
+			case 0x8D52:
 				return 8;
-			case 0x8D53: // GL_ALPHA_BITS
+			case 0x8D53:
 				return 8;
-			case 0x8B8D: // GL_CURRENT_PROGRAM
+			case 0x8B8D:
 				return 0;
-			case 0x8CA6: // GL_ARRAY_BUFFER_BINDING
-			case 0x8CA7: // GL_ELEMENT_ARRAY_BUFFER_BINDING
+			case 0x8CA6:
+			case 0x8CA7:
 				return 0;
-			case 0x8069: // GL_TEXTURE_BINDING_2D
+			case 0x8069:
 				return 0;
-			case 0x84E0: // GL_ACTIVE_TEXTURE
-				return 0x84C0; // GL_TEXTURE0
+			case 0x84E0:
+				return 0x84C0;
 			default:
 				result = 0;
 				break;
@@ -1368,17 +1543,14 @@ globalThis.gl = {
 		return result;
 	},
 
-	// ==== GL ENUMS ====
 
 	DEPTH_BUFFER_BIT: 0x00000100,
 	STENCIL_BUFFER_BIT: 0x00000400,
 	COLOR_BUFFER_BIT: 0x00004000,
 	
-	// Boolean values
 	FALSE: 0,
 	TRUE: 1,
 	
-	// Primitive types
 	POINTS: 0x0000,
 	LINES: 0x0001,
 	LINE_LOOP: 0x0002,
@@ -1387,7 +1559,6 @@ globalThis.gl = {
 	TRIANGLE_STRIP: 0x0005,
 	TRIANGLE_FAN: 0x0006,
 	
-	// Blending
 	ZERO: 0,
 	ONE: 1,
 	SRC_COLOR: 0x0300,
@@ -1415,7 +1586,6 @@ globalThis.gl = {
 	ONE_MINUS_CONSTANT_ALPHA: 0x8004,
 	BLEND_COLOR: 0x8005,
 	
-	// Buffers
 	ARRAY_BUFFER: 0x8892,
 	ELEMENT_ARRAY_BUFFER: 0x8893,
 	ARRAY_BUFFER_BINDING: 0x8894,
@@ -1427,13 +1597,11 @@ globalThis.gl = {
 	BUFFER_USAGE: 0x8765,
 	CURRENT_VERTEX_ATTRIB: 0x8626,
 	
-	// Culling
 	FRONT: 0x0404,
 	BACK: 0x0405,
 	FRONT_AND_BACK: 0x0408,
 	CULL_FACE: 0x0B44,
 	
-	// Enable/Disable
 	TEXTURE_2D: 0x0DE1,
 	BLEND: 0x0BE2,
 	DITHER: 0x0BD0,
@@ -1444,18 +1612,15 @@ globalThis.gl = {
 	SAMPLE_ALPHA_TO_COVERAGE: 0x809E,
 	SAMPLE_COVERAGE: 0x80A0,
 	
-	// Errors
 	NO_ERROR: 0,
 	INVALID_ENUM: 0x0500,
 	INVALID_VALUE: 0x0501,
 	INVALID_OPERATION: 0x0502,
 	OUT_OF_MEMORY: 0x0505,
 	
-	// Front face
 	CW: 0x0900,
 	CCW: 0x0901,
 	
-	// Data types
 	BYTE: 0x1400,
 	UNSIGNED_BYTE: 0x1401,
 	SHORT: 0x1402,
@@ -1465,7 +1630,6 @@ globalThis.gl = {
 	FLOAT: 0x1406,
 	FIXED: 0x140C,
 	
-	// Pixel formats
 	DEPTH_COMPONENT: 0x1902,
 	ALPHA: 0x1906,
 	RGB: 0x1907,
@@ -1476,7 +1640,6 @@ globalThis.gl = {
 	UNSIGNED_SHORT_5_5_5_1: 0x8034,
 	UNSIGNED_SHORT_5_6_5: 0x8363,
 	
-	// Shaders
 	FRAGMENT_SHADER: 0x8B30,
 	VERTEX_SHADER: 0x8B31,
 	MAX_VERTEX_ATTRIBS: 0x8869,
@@ -1502,7 +1665,6 @@ globalThis.gl = {
 	SHADER_SOURCE_LENGTH: 0x8B88,
 	SHADER_COMPILER: 0x8DFA,
 	
-	// Depth/Stencil functions
 	NEVER: 0x0200,
 	LESS: 0x0201,
 	EQUAL: 0x0202,
@@ -1519,13 +1681,11 @@ globalThis.gl = {
 	INCR_WRAP: 0x8507,
 	DECR_WRAP: 0x8508,
 	
-	// String names
 	VENDOR: 0x1F00,
 	RENDERER: 0x1F01,
 	VERSION: 0x1F02,
 	EXTENSIONS: 0x1F03,
 	
-	// Texture filtering
 	NEAREST: 0x2600,
 	LINEAR: 0x2601,
 	NEAREST_MIPMAP_NEAREST: 0x2700,
@@ -1537,7 +1697,6 @@ globalThis.gl = {
 	TEXTURE_WRAP_S: 0x2802,
 	TEXTURE_WRAP_T: 0x2803,
 	
-	// Textures
 	TEXTURE: 0x1702,
 	TEXTURE_CUBE_MAP: 0x8513,
 	TEXTURE_BINDING_CUBE_MAP: 0x8514,
@@ -1549,7 +1708,6 @@ globalThis.gl = {
 	TEXTURE_CUBE_MAP_NEGATIVE_Z: 0x851A,
 	MAX_CUBE_MAP_TEXTURE_SIZE: 0x851C,
 	
-	// Texture units
 	TEXTURE0: 0x84C0,
 	TEXTURE1: 0x84C1,
 	TEXTURE2: 0x84C2,
@@ -1584,12 +1742,10 @@ globalThis.gl = {
 	TEXTURE31: 0x84DF,
 	ACTIVE_TEXTURE: 0x84E0,
 	
-	// Texture wrapping
 	REPEAT: 0x2901,
 	CLAMP_TO_EDGE: 0x812F,
 	MIRRORED_REPEAT: 0x8370,
 	
-	// Uniform types
 	FLOAT_VEC2: 0x8B50,
 	FLOAT_VEC3: 0x8B51,
 	FLOAT_VEC4: 0x8B52,
@@ -1606,7 +1762,6 @@ globalThis.gl = {
 	SAMPLER_2D: 0x8B5E,
 	SAMPLER_CUBE: 0x8B60,
 	
-	// Vertex attributes
 	VERTEX_ATTRIB_ARRAY_ENABLED: 0x8622,
 	VERTEX_ATTRIB_ARRAY_SIZE: 0x8623,
 	VERTEX_ATTRIB_ARRAY_STRIDE: 0x8624,
@@ -1615,7 +1770,6 @@ globalThis.gl = {
 	VERTEX_ATTRIB_ARRAY_POINTER: 0x8645,
 	VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: 0x889F,
 	
-	// Implementation limits
 	MAX_TEXTURE_SIZE: 0x0D33,
 	MAX_VIEWPORT_DIMS: 0x0D3A,
 	SUBPIXEL_BITS: 0x0D50,
@@ -1626,7 +1780,6 @@ globalThis.gl = {
 	DEPTH_BITS: 0x0D56,
 	STENCIL_BITS: 0x0D57,
 	
-	// Framebuffers
 	FRAMEBUFFER: 0x8D40,
 	RENDERBUFFER: 0x8D41,
 	RGBA4: 0x8056,
@@ -1640,7 +1793,6 @@ globalThis.gl = {
 	NONE: 0,
 	FRAMEBUFFER_COMPLETE: 0x8CD5,
 	
-	// WebGL2 specific constants
 	TEXTURE_3D: 0x806F,
 	TEXTURE_2D_ARRAY: 0x8C1A,
 	UNIFORM_BUFFER: 0x8A11,

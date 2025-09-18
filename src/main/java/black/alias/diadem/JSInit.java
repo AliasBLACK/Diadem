@@ -30,8 +30,6 @@ public class JSInit {
     }
     
     public void run() {
-        System.out.println("Starting JavaScript Application...");
-        
         init();
         loop();
         
@@ -72,13 +70,11 @@ public class JSInit {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-            System.out.println("Configured OpenGL Core Profile for macOS");
         } else {
             // Windows/Linux can use compatibility profile
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            System.out.println("Configured OpenGL 4.3 Core Profile for " + osName);
         }
         
         // Create the window
@@ -132,16 +128,21 @@ public class JSInit {
     
     private void initJSContext() {
 
-        System.out.println("Initializing JavaScript context...");
         jsContext = new JSContext();
 
         // Init JS Context.
         try {
-            // Load polyfills.
+            // 1. Load polyfills first (Three.js needs them)
             jsContext.executeScriptFile("src/main/lib/polyfills.js"); 
+            
+            // 2. Import Three.js and make it available globally
+            jsContext.executeModule("import * as THREE from 'three'; globalThis.THREE = THREE;");
+            
+            // 3. Setup GLTF Loader (after polyfills and Three.js)
+            jsContext.setupGLTFLoader();
 
-            // Load and execute main.js from client folder as ES6 module
-            jsContext.executeModuleFile("src/main/src/main.js");
+            // 4. Load and execute main.js from client folder as ES6 module
+            jsContext.executeModuleFile("src/main/js/main.js");
 
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());

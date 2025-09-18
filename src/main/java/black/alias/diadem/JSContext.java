@@ -12,6 +12,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
+import java.util.function.Function;
+import black.alias.diadem.Utils.GLTFLoader;
 
 /**
  * WebGL2 Context that bridges JavaScript WebGL2 API calls to Java GLES implementation.
@@ -43,6 +45,38 @@ public class JSContext implements AutoCloseable {
         }
     }
     
+    private GLTFLoader gltfLoaderInstance = null;
+    
+    /**
+     * Setup GLTF Loader in the JavaScript context
+     */
+    public void setupGLTFLoader() {
+        try {
+            // Expose the loader function directly to JavaScript
+            jsContext.getBindings("js").putMember("loadGLTF", new Function<String, Value>() {
+                @Override
+                public Value apply(String filePath) {
+                    // Get Three.js when the function is called
+                    Value threeJS = jsContext.getBindings("js").getMember("THREE");
+                    if (threeJS == null) {
+                        throw new RuntimeException("THREE.js is not loaded yet");
+                    }
+                    
+                    // Create GLTFLoader instance only once (singleton pattern)
+                    if (gltfLoaderInstance == null) {
+                        gltfLoaderInstance = new GLTFLoader(jsContext, threeJS);
+                    }
+                    return gltfLoaderInstance.loadGLTF(filePath);
+                }
+            });
+            
+            
+        } catch (Exception e) {
+            System.err.println("Failed to setup GLTF Loader: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     /**
      * Custom FileSystem that maps 'three' module to the actual three.module.js file
      */
@@ -66,11 +100,8 @@ public class JSContext implements AutoCloseable {
             if ("three".equals(path)) {
                 return THREE_MODULE_PATH;
             }
-            if (path.startsWith("three.") && path.endsWith(".js")) {
-                return Paths.get("/virtual/" + path);
-            }
-            if (path.startsWith("./three.") && path.endsWith(".js")) {
-                return Paths.get("/virtual/" + path.substring(2));
+            if ("three.core.js".equals(path)) {
+                return Paths.get("/virtual/three.core.js");
             }
             return defaultFS.parsePath(path);
         }
@@ -83,14 +114,11 @@ public class JSContext implements AutoCloseable {
             }
             
             String pathStr = path.toString().replace('\\', '/');
-            if (pathStr.startsWith("/virtual/three.") && pathStr.endsWith(".js")) {
-                String fileName = pathStr.substring("/virtual/".length());
-                Path actualFile = Paths.get("src/main/lib/" + fileName);
-                
-                if (Files.exists(actualFile)) {
-                    String content = new String(Files.readAllBytes(actualFile));
-                    return createByteChannelFrom(content);
-                }
+            
+            // Handle three.core.js (required by three.module.js)
+            if ("/virtual/three.core.js".equals(pathStr)) {
+                String content = new String(Files.readAllBytes(Paths.get("src/main/lib/three.core.js")));
+                return createByteChannelFrom(content);
             }
             
             return defaultFS.newByteChannel(path, options, attrs);
@@ -154,7 +182,8 @@ public class JSContext implements AutoCloseable {
         // Delegate other methods to default FileSystem
         @Override
         public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
-            if (THREE_MODULE_PATH.equals(path) || path.toString().startsWith("/virtual/three.")) {
+            String pathStr = path.toString().replace('\\', '/');
+            if (THREE_MODULE_PATH.equals(path) || "/virtual/three.core.js".equals(pathStr)) {
                 return;
             }
             defaultFS.checkAccess(path, modes, linkOptions);
