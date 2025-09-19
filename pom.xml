@@ -12,8 +12,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>21</maven.compiler.release>
-    <lwjgl.version>3.3.3</lwjgl.version>
+    <maven.compiler.release>24</maven.compiler.release>
+    <lwjgl.version>3.3.6</lwjgl.version>
     <lwjgl.natives>natives-windows</lwjgl.natives>
     <graaljs.version>24.2.2</graaljs.version>
   </properties>
@@ -175,6 +175,36 @@
   <build>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
+        <plugin>
+          <groupId>com.github.akman</groupId>
+          <artifactId>jpackage-maven-plugin</artifactId>
+          <version>0.1.5</version>
+          <configuration>
+            <name>Diadem</name>
+            <appversion>1.0.0</appversion>
+            <vendor>Diadem</vendor>
+            <dest>target/dist</dest>
+            <input>target</input>
+            <mainjar>diadem-1.0-SNAPSHOT.jar</mainjar>
+            <mainclass>black.alias.diadem.JSInit</mainclass>
+            <type>IMAGE</type>
+            <javaoptions>-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED</javaoptions>
+            <addmodules>
+              <addmodule>java.base</addmodule>
+              <addmodule>java.desktop</addmodule>
+              <addmodule>java.logging</addmodule>
+              <addmodule>java.management</addmodule>
+              <addmodule>jdk.unsupported</addmodule>
+            </addmodules>
+            <bindservices>false</bindservices>
+            <stripdebug>true</stripdebug>
+            <compress>2</compress>
+            <noheaderfiles>true</noheaderfiles>
+            <nomanpages>true</nomanpages>
+            <stripnativecommands>true</stripnativecommands>
+            <winconsole>true</winconsole>
+          </configuration>
+        </plugin>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -287,32 +317,10 @@
         </executions>
       </plugin>
       
-      <!-- JPackage Maven Plugin -->
+      <!-- JPackage Maven Plugin (akman version with better jlink support) -->
       <plugin>
-        <groupId>org.panteleyev</groupId>
+        <groupId>com.github.akman</groupId>
         <artifactId>jpackage-maven-plugin</artifactId>
-        <version>1.6.5</version>
-        <configuration>
-          <name>Diadem</name>
-          <appVersion>1.0.0</appVersion>
-          <vendor>Diadem</vendor>
-          <destination>target/dist</destination>
-          <input>target</input>
-          <mainJar>diadem-1.0-SNAPSHOT.jar</mainJar>
-          <mainClass>black.alias.diadem.JSInit</mainClass>
-          <type>APP_IMAGE</type>
-          <javaOptions>
-            <option>-Dfile.encoding=UTF-8</option>
-          </javaOptions>
-          <jlinkOptions>
-            <option>--strip-debug</option>
-            <option>--compress=2</option>
-            <option>--no-header-files</option>
-            <option>--no-man-pages</option>
-          </jlinkOptions>
-          <linuxShortcut>true</linuxShortcut>
-          <winConsole>true</winConsole>
-        </configuration>
         <executions>
           <execution>
             <id>jpackage</id>
