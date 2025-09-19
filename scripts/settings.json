@@ -1,0 +1,9 @@
+{
+    "windowTitle": "Diadem Game Engine",    // Window title
+    "resolutionWidth": 1024,                // Window width
+    "resolutionHeight": 576,                // Window height
+    "fullscreen": false,                    // Fullscreen mode
+    "savePrefix": "save",                   // Save file prefix
+    "saveEncryptionKey": "625",             // Save file encryption key
+	"mainScript": "main.js"                 // Main script file
+}

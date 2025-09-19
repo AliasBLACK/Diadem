@@ -17,8 +17,7 @@ public class JSInit {
     private JSContext jsContext;
     private ScriptManager scriptManager;
     
-    private static final int WINDOW_WIDTH = 800;
-    private static final int WINDOW_HEIGHT = 600;
+    private Settings settings;
     
     public static void main(String[] args) {
         new JSInit().run();
@@ -39,6 +38,9 @@ public class JSInit {
     }
     
     private void init() {
+        // Load settings first
+        settings = Settings.load();
+        
         GLFWErrorCallback.createPrint(System.err).set();
         
         if (!glfwInit()) {
@@ -61,7 +63,10 @@ public class JSInit {
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         }
         
-        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "JavaScript WebGL Application", NULL, NULL);
+        // Create window using settings
+        long monitor = settings.isFullscreen() ? glfwGetPrimaryMonitor() : NULL;
+        window = glfwCreateWindow(settings.getResolutionWidth(), settings.getResolutionHeight(), 
+                                settings.getWindowTitle(), monitor, NULL);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }

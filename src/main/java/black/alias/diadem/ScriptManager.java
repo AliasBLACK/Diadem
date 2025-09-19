@@ -8,22 +8,25 @@ public class ScriptManager {
     private final JSContext jsContext;
     private final Path fallbackScriptsDirectory;
     private final boolean useResources;
+    private final Settings settings;
     
     public ScriptManager(JSContext jsContext) {
         this.jsContext = jsContext;
         this.fallbackScriptsDirectory = Paths.get("scripts");
+        this.settings = Settings.load();
         
         // Check if we can load scripts from resources (compiled/packaged mode)
-        this.useResources = getClass().getResourceAsStream("/scripts/main.js") != null;
+        this.useResources = getClass().getResourceAsStream("/scripts/" + settings.getMainScript()) != null;
     }
     
     public void loadMainScript() throws IOException {
+        String scriptName = settings.getMainScript();
         if (useResources) {
             // Load from classpath resources (compiled/packaged mode)
-            loadScriptFromResource("main.js");
+            loadScriptFromResource(scriptName);
         } else {
             // Fall back to project root scripts folder (development mode)
-            Path mainScript = fallbackScriptsDirectory.resolve("main.js");
+            Path mainScript = fallbackScriptsDirectory.resolve(scriptName);
             if (Files.exists(mainScript)) {
                 jsContext.executeModuleFile(mainScript.toString());
             } else {
@@ -56,5 +59,9 @@ public class ScriptManager {
     
     public boolean isUsingResources() {
         return useResources;
+    }
+    
+    public Settings getSettings() {
+        return settings;
     }
 }
