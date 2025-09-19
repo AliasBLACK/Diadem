@@ -6,6 +6,7 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -15,14 +16,10 @@ import java.util.Set;
 import java.util.function.Function;
 import black.alias.diadem.Utils.GLTFLoader;
 
-/**
- * WebGL2 Context that bridges JavaScript WebGL2 API calls to Java GLES implementation.
- * Provides a complete WebGL2-compatible interface for JavaScript applications.
- */
 public class JSContext implements AutoCloseable {
     private final Context jsContext;
-    
     private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
+    private GLTFLoader gltfLoaderInstance = null;
     
     public JSContext() {
         this.jsContext = Context.newBuilder("js")
@@ -35,51 +32,35 @@ public class JSContext implements AutoCloseable {
             .option("js.ecmascript-version", "2022")
             .build();
         
-        // Load and initialize the WebGL2 bridge
         try {
             String bridgeScript = loadBridgeScript();
             jsContext.eval("js", bridgeScript);
-            
         } catch (IOException e) {
             throw new RuntimeException("Failed to load WebGL2 bridge script", e);
         }
     }
     
-    private GLTFLoader gltfLoaderInstance = null;
-    
-    /**
-     * Setup GLTF Loader in the JavaScript context
-     */
     public void setupGLTFLoader() {
         try {
-            // Expose the loader function directly to JavaScript
             jsContext.getBindings("js").putMember("loadGLTF", new Function<String, Value>() {
                 @Override
                 public Value apply(String filePath) {
-                    // Get Three.js when the function is called
                     Value threeJS = jsContext.getBindings("js").getMember("THREE");
                     if (threeJS == null) {
                         throw new RuntimeException("THREE.js is not loaded yet");
                     }
-                    
-                    // Create GLTFLoader instance only once (singleton pattern)
                     if (gltfLoaderInstance == null) {
                         gltfLoaderInstance = new GLTFLoader(jsContext, threeJS);
                     }
                     return gltfLoaderInstance.loadGLTF(filePath);
                 }
             });
-            
-            
         } catch (Exception e) {
             System.err.println("Failed to setup GLTF Loader: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
-    /**
-     * Custom FileSystem that maps 'three' module to the actual three.module.js file
-     */
     private class CustomFileSystem implements FileSystem {
         private final FileSystem defaultFS = FileSystem.newDefaultFileSystem();
         
@@ -100,8 +81,8 @@ public class JSContext implements AutoCloseable {
             if ("three".equals(path)) {
                 return THREE_MODULE_PATH;
             }
-            if ("three.core.js".equals(path)) {
-                return Paths.get("/virtual/three.core.js");
+            if ("three.core.min.js".equals(path)) {
+                return Paths.get("/virtual/three.core.min.js");
             }
             return defaultFS.parsePath(path);
         }
@@ -109,15 +90,13 @@ public class JSContext implements AutoCloseable {
         @Override
         public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
             if (THREE_MODULE_PATH.equals(path)) {
-                String content = new String(Files.readAllBytes(Paths.get("src/main/lib/three.module.js")));
+                String content = loadResourceAsString("/three.module.min.js");
                 return createByteChannelFrom(content);
             }
             
             String pathStr = path.toString().replace('\\', '/');
-            
-            // Handle three.core.js (required by three.module.js)
-            if ("/virtual/three.core.js".equals(pathStr)) {
-                String content = new String(Files.readAllBytes(Paths.get("src/main/lib/three.core.js")));
+            if ("/virtual/three.core.min.js".equals(pathStr)) {
+                String content = loadResourceAsString("/three.core.min.js");
                 return createByteChannelFrom(content);
             }
             
@@ -174,16 +153,14 @@ public class JSContext implements AutoCloseable {
                 
                 @Override
                 public void close() throws IOException {
-                    // Nothing to close
                 }
             };
         }
         
-        // Delegate other methods to default FileSystem
         @Override
         public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
             String pathStr = path.toString().replace('\\', '/');
-            if (THREE_MODULE_PATH.equals(path) || "/virtual/three.core.js".equals(pathStr)) {
+            if (THREE_MODULE_PATH.equals(path) || "/virtual/three.core.min.js".equals(pathStr)) {
                 return;
             }
             defaultFS.checkAccess(path, modes, linkOptions);
@@ -221,20 +198,22 @@ public class JSContext implements AutoCloseable {
     }
     
     private String loadBridgeScript() throws IOException {
-        // Load the bridge script from resources
-        return new String(Files.readAllBytes(Paths.get("src/main/lib/renderer.js")));
+        return loadResourceAsString("/renderer.js");
     }
     
-    /**
-     * Execute JavaScript code with WebGL2 context available
-     */
+    private String loadResourceAsString(String resourcePath) throws IOException {
+        try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                throw new IOException("Resource not found: " + resourcePath);
+            }
+            return new String(is.readAllBytes());
+        }
+    }
+    
     public Value executeScript(String script) {
         return jsContext.eval("js", script);
     }
     
-    /**
-     * Execute ES6 module code with WebGL2 context available
-     */
     public Value executeModule(String moduleCode) {
         try {
             return jsContext.eval(org.graalvm.polyglot.Source.newBuilder("js", moduleCode, "module.mjs")
@@ -245,32 +224,30 @@ public class JSContext implements AutoCloseable {
         }
     }
     
-    /**
-     * Execute JavaScript code from a file
-     */
     public Value executeScriptFile(String filename) throws IOException {
-        String script = new String(Files.readAllBytes(Paths.get(filename)));
+        String script;
+        if (filename.startsWith("/")) {
+            script = loadResourceAsString(filename);
+        } else {
+            script = new String(Files.readAllBytes(Paths.get(filename)));
+        }
         return executeScript(script);
     }
     
-    /**
-     * Execute ES6 module from a file
-     */
     public Value executeModuleFile(String filename) throws IOException {
-        String moduleCode = new String(Files.readAllBytes(Paths.get(filename)));
+        String moduleCode;
+        if (filename.startsWith("/")) {
+            moduleCode = loadResourceAsString(filename);
+        } else {
+            moduleCode = new String(Files.readAllBytes(Paths.get(filename)));
+        }
         return executeModule(moduleCode);
     }
     
-    /**
-     * Get the JavaScript context for advanced operations
-     */
     public Context getJavaScriptContext() {
         return jsContext;
     }
     
-    /**
-     * Close the context and free resources
-     */
     public void close() {
         jsContext.close();
     }
