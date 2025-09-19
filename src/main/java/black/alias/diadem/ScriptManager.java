@@ -21,17 +21,16 @@ public class ScriptManager {
     
     public void loadMainScript() throws IOException {
         String scriptName = settings.getMainScript();
-        if (useResources) {
-            // Load from classpath resources (compiled/packaged mode)
+        // Always try to load from filesystem first for proper module resolution
+        Path mainScript = fallbackScriptsDirectory.resolve(scriptName);
+        if (Files.exists(mainScript)) {
+            // Load from filesystem (development mode) - this gives proper module context
+            jsContext.executeModuleFromFile(mainScript.toString());
+        } else if (useResources) {
+            // Fallback to resources (compiled/packaged mode) - limited module resolution
             loadScriptFromResource(scriptName);
         } else {
-            // Fall back to project root scripts folder (development mode)
-            Path mainScript = fallbackScriptsDirectory.resolve(scriptName);
-            if (Files.exists(mainScript)) {
-                jsContext.executeModuleFile(mainScript.toString());
-            } else {
-                throw new IOException("Script not found: " + mainScript);
-            }
+            throw new IOException("Script not found: " + mainScript);
         }
     }
     

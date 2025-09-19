@@ -224,6 +224,17 @@ public class JSContext implements AutoCloseable {
         }
     }
     
+    public Value executeModuleFromFile(String filePath) throws IOException {
+        try {
+            Path path = Paths.get(filePath);
+            return jsContext.eval(org.graalvm.polyglot.Source.newBuilder("js", path.toFile())
+                .mimeType("application/javascript+module")
+                .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute ES6 module from file: " + filePath, e);
+        }
+    }
+    
     public Value executeScriptFile(String filename) throws IOException {
         String script;
         if (filename.startsWith("/")) {

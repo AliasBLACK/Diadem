@@ -16,6 +16,7 @@ public class JSInit {
     private long window;
     private JSContext jsContext;
     private ScriptManager scriptManager;
+    private AssetManager assetManager;
     
     private Settings settings;
     
@@ -102,11 +103,13 @@ public class JSInit {
     private void initJSContext() {
         jsContext = new JSContext();
         scriptManager = new ScriptManager(jsContext);
+        assetManager = new AssetManager(jsContext);
 
         try {
             jsContext.executeScriptFile("/polyfills.js"); 
             jsContext.executeModule("import * as THREE from 'three'; globalThis.THREE = THREE;");
             jsContext.setupGLTFLoader();
+            assetManager.setupAssetLoader();
             scriptManager.loadMainScript();
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());

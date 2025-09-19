@@ -294,7 +294,7 @@
         </executions>
       </plugin>
       
-      <!-- Copy scripts from project root to resources during compile -->
+      <!-- Copy scripts and assets from project root to resources during compile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
@@ -307,10 +307,26 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/classes</outputDirectory>
+              <outputDirectory>${project.build.directory}/classes/scripts</outputDirectory>
               <resources>
                 <resource>
                   <directory>scripts</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-assets-to-resources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/classes/assets</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>assets</directory>
                   <filtering>false</filtering>
                 </resource>
               </resources>
