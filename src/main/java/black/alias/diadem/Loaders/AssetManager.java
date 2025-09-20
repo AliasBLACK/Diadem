@@ -1,4 +1,4 @@
-package black.alias.diadem;
+package black.alias.diadem.Loaders;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import black.alias.diadem.JSContext;
 
 public class AssetManager {
     private final JSContext jsContext;
@@ -18,9 +19,6 @@ public class AssetManager {
         
         // Check if we can load assets from resources (compiled/packaged mode)
         this.useResources = getClass().getResourceAsStream("/assets/test-module.js") != null;
-        
-        System.out.println("AssetManager initialized - using " + 
-                          (useResources ? "resources" : "filesystem") + " mode");
     }
     
     public String loadAssetAsString(String assetPath) throws IOException {
@@ -70,8 +68,7 @@ public class AssetManager {
                         }
                     }
                 });
-                
-            System.out.println("Asset loader function exposed to JavaScript as 'loadAsset(path)'");
+            
         } catch (Exception e) {
             System.err.println("Failed to setup asset loader: " + e.getMessage());
             e.printStackTrace();
@@ -81,4 +78,5 @@ public class AssetManager {
     public boolean isUsingResources() {
         return useResources;
     }
+    
 }

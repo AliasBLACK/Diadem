@@ -1,8 +1,10 @@
-package black.alias.diadem;
+package black.alias.diadem.Loaders;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import black.alias.diadem.JSContext;
+import black.alias.diadem.Settings;
 
 public class ScriptManager {
     private final JSContext jsContext;

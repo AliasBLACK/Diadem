@@ -1,4 +1,4 @@
-package black.alias.diadem.Utils;
+package black.alias.diadem.Loaders;
 
 import org.lwjgl.assimp.*;
 import org.graalvm.polyglot.Value;

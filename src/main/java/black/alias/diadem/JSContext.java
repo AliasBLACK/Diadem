@@ -14,12 +14,14 @@ import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
 import java.util.function.Function;
-import black.alias.diadem.Utils.GLTFLoader;
+import black.alias.diadem.Loaders.GLTFLoader;
+import black.alias.diadem.Loaders.TextureLoader;
 
 public class JSContext implements AutoCloseable {
     private final Context jsContext;
     private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
     private GLTFLoader gltfLoaderInstance = null;
+    private TextureLoader textureLoaderInstance = null;
     
     public JSContext() {
         this.jsContext = Context.newBuilder("js")
@@ -42,23 +44,92 @@ public class JSContext implements AutoCloseable {
     
     public void setupGLTFLoader() {
         try {
-            jsContext.getBindings("js").putMember("loadGLTF", new Function<String, Value>() {
-                @Override
-                public Value apply(String filePath) {
-                    Value threeJS = jsContext.getBindings("js").getMember("THREE");
-                    if (threeJS == null) {
-                        throw new RuntimeException("THREE.js is not loaded yet");
-                    }
-                    if (gltfLoaderInstance == null) {
-                        gltfLoaderInstance = new GLTFLoader(jsContext, threeJS);
-                    }
-                    return gltfLoaderInstance.loadGLTF(filePath);
-                }
+            bindGLTFFunction("loadGLTF", args -> {
+                String filePath = (String) args[0];
+                return getGLTFLoader().loadGLTF(filePath);
             });
         } catch (Exception e) {
             System.err.println("Failed to setup GLTF Loader: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    private GLTFLoader getGLTFLoader() {
+        if (gltfLoaderInstance == null) {
+            Value threeJS = jsContext.getBindings("js").getMember("THREE");
+            if (threeJS == null) {
+                throw new RuntimeException("THREE.js is not loaded yet");
+            }
+            gltfLoaderInstance = new GLTFLoader(jsContext, threeJS);
+        }
+        return gltfLoaderInstance;
+    }
+    
+    private void bindGLTFFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
+        jsContext.getBindings("js").putMember(functionName, new Function<Object[], Object>() {
+            @Override
+            public Object apply(Object[] args) {
+                return handler.apply(args);
+            }
+        });
+    }
+    
+    public void setupTextureLoader() {
+        try {
+            bindTextureFunction("loadTexture", args -> {
+                String texturePath = (String) args[0];
+                return getTextureLoader().loadTexture(texturePath);
+            });
+            
+            bindTextureFunction("loadTextureWithSize", args -> {
+                if (args.length != 3) {
+                    throw new IllegalArgumentException("loadTextureWithSize requires 3 arguments: texturePath, width, height");
+                }
+                String texturePath = (String) args[0];
+                int width = ((Number) args[1]).intValue();
+                int height = ((Number) args[2]).intValue();
+                return getTextureLoader().loadTextureWithSize(texturePath, width, height);
+            });
+            
+            bindTextureFunction("createCheckerboardTexture", args -> {
+                if (args.length != 3) {
+                    throw new IllegalArgumentException("createCheckerboardTexture requires 3 arguments: width, height, checkerSize");
+                }
+                int width = ((Number) args[0]).intValue();
+                int height = ((Number) args[1]).intValue();
+                int checkerSize = ((Number) args[2]).intValue();
+                return getTextureLoader().createCheckerboardTexture(width, height, checkerSize);
+            });
+            
+            bindTextureFunction("textureExists", args -> {
+                String texturePath = (String) args[0];
+                return getTextureLoader().textureExists(texturePath);
+            });
+            
+        } catch (Exception e) {
+            System.err.println("Failed to setup Texture Loader: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    private TextureLoader getTextureLoader() {
+        if (textureLoaderInstance == null) {
+            Value threeJS = jsContext.getBindings("js").getMember("THREE");
+            if (threeJS == null) {
+                throw new RuntimeException("THREE.js is not loaded yet");
+            }
+            textureLoaderInstance = new TextureLoader(jsContext, threeJS);
+        }
+        return textureLoaderInstance;
+    }
+    
+    private void bindTextureFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
+        jsContext.getBindings("js").putMember(functionName, new Function<Object[], Object>() {
+            @Override
+            public Object apply(Object[] args) {
+                return handler.apply(args);
+            }
+        });
     }
     
     private class CustomFileSystem implements FileSystem {
