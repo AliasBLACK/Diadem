@@ -60,7 +60,7 @@ public class JSContext implements AutoCloseable {
             if (threeJS == null) {
                 throw new RuntimeException("THREE.js is not loaded yet");
             }
-            gltfLoaderInstance = new GLTFLoader(jsContext, threeJS);
+            gltfLoaderInstance = new GLTFLoader(jsContext, threeJS, getTextureLoader());
         }
         return gltfLoaderInstance;
     }

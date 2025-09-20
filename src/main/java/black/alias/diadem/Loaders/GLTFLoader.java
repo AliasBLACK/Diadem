@@ -15,12 +15,14 @@ import static org.lwjgl.assimp.Assimp.*;
  */
 public class GLTFLoader {
     
-    private Context jsContext;
-    private Value threeJS;
+    private final Context jsContext;
+    private final Value threeJS;
+    private final TextureLoader textureLoader;
     
-    public GLTFLoader(Context jsContext, Value threeJS) {
+    public GLTFLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
         this.jsContext = jsContext;
         this.threeJS = threeJS;
+        this.textureLoader = textureLoader;
     }
     
     /**
@@ -206,8 +208,8 @@ public class GLTFLoader {
                 if (result == aiReturn_SUCCESS) {
                     String textureFile = texturePath.dataString();
                     
-                    // Load texture file using Java ImageIO (like we did before)
-                    return createThreeJSTexture(textureFile);
+                    // Use the existing TextureLoader instead of duplicating code
+                    return textureLoader.loadTexture(textureFile);
                 }
             }
         } catch (Exception e) {
@@ -216,61 +218,5 @@ public class GLTFLoader {
         }
         
         return null;
-    }
-    
-    /**
-     * Create Three.js texture from image file
-     */
-    private Value createThreeJSTexture(String textureFile) {
-        try {
-            // Load image using Java ImageIO
-            java.nio.file.Path imagePath = java.nio.file.Paths.get("src/main/assets/" + textureFile);
-            if (!java.nio.file.Files.exists(imagePath)) {
-                System.err.println("Texture file not found: " + imagePath);
-                return null;
-            }
-            
-            java.awt.image.BufferedImage bufferedImage = javax.imageio.ImageIO.read(imagePath.toFile());
-            if (bufferedImage == null) {
-                System.err.println("Failed to load image: " + imagePath);
-                return null;
-            }
-            
-            int width = bufferedImage.getWidth();
-            int height = bufferedImage.getHeight();
-            
-            // Extract RGBA pixel data
-            int[] pixels = new int[width * height];
-            bufferedImage.getRGB(0, 0, width, height, pixels, 0, width);
-            
-            // Convert to Uint8Array format (like we did successfully before)
-            int[] pixelData = new int[width * height * 4];
-            for (int i = 0; i < pixels.length; i++) {
-                int pixel = pixels[i];
-                pixelData[i * 4] = (pixel >> 16) & 0xFF; // R
-                pixelData[i * 4 + 1] = (pixel >> 8) & 0xFF;  // G
-                pixelData[i * 4 + 2] = pixel & 0xFF;         // B
-                pixelData[i * 4 + 3] = (pixel >> 24) & 0xFF; // A
-            }
-            
-            // Create Uint8Array in JavaScript (this worked before)
-            Value Uint8Array = jsContext.eval("js", "Uint8Array");
-            Value imageData = Uint8Array.newInstance(pixelData);
-            
-            // Create Three.js DataTexture
-            Value DataTexture = threeJS.getMember("DataTexture");
-            Value UnsignedByteType = threeJS.getMember("UnsignedByteType");
-            Value RGBAFormat = threeJS.getMember("RGBAFormat");
-            
-            Value texture = DataTexture.newInstance(imageData, width, height, RGBAFormat, UnsignedByteType);
-            texture.putMember("needsUpdate", true);
-            
-            return texture;
-            
-        } catch (Exception e) {
-            System.err.println("Error creating Three.js texture: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
     }
 }
