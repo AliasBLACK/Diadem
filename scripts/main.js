@@ -1,6 +1,6 @@
 // Full Three.js API available
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, 1024/576, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, 1920/1080, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ context: gl });
 
 // Create your 3D objects
