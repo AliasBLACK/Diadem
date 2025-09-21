@@ -111,6 +111,7 @@ public class JSInit {
             jsContext.setupGLTFLoader();
             jsContext.setupTextureLoader();
             assetManager.setupAssetLoader();
+            jsContext.executeScriptFile("/extensions.js");
             scriptManager.loadMainScript();
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());
