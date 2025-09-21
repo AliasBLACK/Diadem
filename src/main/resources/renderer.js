@@ -11,7 +11,7 @@ const GL40 = Java.type('org.lwjgl.opengl.GL40');
 const GL42 = Java.type('org.lwjgl.opengl.GL42');
 const GL43 = Java.type('org.lwjgl.opengl.GL43');
 const glAdapter = Java.type('black.alias.diadem.Utils.GLAdapter');
-const bufferUtils = Java.type('black.alias.diadem.Utils.BufferUtils');
+const bufferUtils = Java.type('org.lwjgl.BufferUtils');
 
 const ImageIO = Java.type('javax.imageio.ImageIO');
 const ByteArrayInputStream = Java.type('java.io.ByteArrayInputStream');
@@ -42,19 +42,19 @@ globalThis.gl = {
 	bufferData: (target, data, usage) => {
 		if (data instanceof ArrayBuffer || data instanceof Float32Array || data instanceof Uint16Array) {
 			if (data instanceof Float32Array) {
-				const buffer = bufferUtils.newFloatBuffer(data.length);
+				const buffer = bufferUtils.createFloatBuffer(data.length);
 				for (let i = 0; i < data.length; i++) {
 					buffer.put(i, data[i]);
 				}
 				GL15.glBufferData(target ? target : 0, buffer, usage ? usage : 0);
 			} else if (data instanceof Uint16Array) {
-				const buffer = bufferUtils.newShortBuffer(data.length);
+				const buffer = bufferUtils.createShortBuffer(data.length);
 				for (let i = 0; i < data.length; i++) {
 					buffer.put(i, data[i]);
 				}
 				GL15.glBufferData(target ? target : 0, buffer, usage ? usage : 0);
 			} else {
-				const buffer = bufferUtils.newByteBuffer(data.byteLength);
+				const buffer = bufferUtils.createByteBuffer(data.byteLength);
 				const view = new Uint8Array(data);
 				for (let i = 0; i < view.length; i++) {
 					buffer.put(i, view[i]);
@@ -155,13 +155,13 @@ globalThis.gl = {
 	},
 
 	getShaderParameter: (shader, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetShaderiv(shader ? shader : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
 	getProgramParameter: (program, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetProgramiv(program ? program : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
@@ -222,7 +222,7 @@ globalThis.gl = {
 			} else {
 				let buffer = null;
 				if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
-					buffer = bufferUtils.newByteBuffer(pixels.length * 4);
+					buffer = bufferUtils.createByteBuffer(pixels.length * 4);
 					for (let i = 0; i < pixels.length; i++) {
 						buffer.putFloat(pixels[i]);
 					}
@@ -234,104 +234,93 @@ globalThis.gl = {
 		}
 	},
 
-	texParameteri: (target, pname, param) => {
-		GL11.glTexParameteri(target ? target : 0, pname ? pname : 0, param ? param : 0);
-	},
-
 	uniform1f: (location, value) => {
-		glAdapter.glUniform1f(location ? location : -1, value ? value : 0.0);
+		glAdapter.glUniform1f(location, value !== undefined ? value : 0.0);
 	},
 
 	uniform1i: (location, value) => {
-		GL20.glUniform1i(location ? location : -1, value ? value : 0);
+		GL20.glUniform1i(location, value !== undefined ? value : 0);
 	},
 
 	uniform2f: (location, x, y) => {
-		glAdapter.glUniform2f(location ? location : -1, x ? x : 0.0, y ? y : 0.0);
+		glAdapter.glUniform2f(location, x !== undefined ? x : 0.0, y !== undefined ? y : 0.0);
 	},
 
 	uniform3f: (location, x, y, z) => {
-		glAdapter.glUniform3f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0);
+		glAdapter.glUniform3f(location, x !== undefined ? x : 0.0, y !== undefined ? y : 0.0, z !== undefined ? z : 0.0);
 	},
 
 	uniform4f: (location, x, y, z, w) => {
-		glAdapter.glUniform4f(location ? location : -1, x ? x : 0.0, y ? y : 0.0, z ? z : 0.0, w ? w : 0.0);
+		glAdapter.glUniform4f(location, x !== undefined ? x : 0.0, y !== undefined ? y : 0.0, z !== undefined ? z : 0.0, w !== undefined ? w : 0.0);
 	},
 
 	uniform1fv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniform1fv(location ? location : -1, buffer);
+			glAdapter.glUniform1fv(location, buffer);
 		}
 	},
 
 	uniform2fv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniform2fv(location ? location : -1, buffer);
+			glAdapter.glUniform2fv(location, buffer);
 		}
 	},
 
 	uniform3fv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniform3fv(location ? location : -1, buffer);
+			glAdapter.glUniform3fv(location, buffer);
 		}
 	},
 
 	uniform4fv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniform4fv(location ? location : -1, buffer);
+			glAdapter.glUniform4fv(location, buffer);
 		}
 	},
 
 	uniform1iv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createIntBuffer(value);
-			glAdapter.glUniform1iv(location ? location : -1, buffer);
+			glAdapter.glUniform1iv(location, buffer);
 		}
 	},
 
 	uniform2iv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createIntBuffer(value);
-			glAdapter.glUniform2iv(location ? location : -1, buffer);
-		}
-	},
-
-	uniform3iv: (location, value) => {
-		if (value && value.length) {
-			const buffer = glAdapter.createIntBuffer(value);
-			glAdapter.glUniform3iv(location ? location : -1, buffer);
+			glAdapter.glUniform2iv(location, buffer);
 		}
 	},
 
 	uniform4iv: (location, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createIntBuffer(value);
-			glAdapter.glUniform4iv(location ? location : -1, buffer);
+			glAdapter.glUniform4iv(location, buffer);
 		}
 	},
 
 	uniformMatrix2fv: (location, transpose, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniformMatrix2fv(location ? location : -1, transpose ? transpose : false, buffer);
+			glAdapter.glUniformMatrix2fv(location, transpose !== undefined ? transpose : false, buffer);
 		}
 	},
 
 	uniformMatrix3fv: (location, transpose, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniformMatrix3fv(location ? location : -1, transpose ? transpose : false, buffer);
+			glAdapter.glUniformMatrix3fv(location, transpose !== undefined ? transpose : false, buffer);
 		}
 	},
 
 	uniformMatrix4fv: (location, transpose, value) => {
 		if (value && value.length) {
 			const buffer = glAdapter.createFloatBuffer(value);
-			glAdapter.glUniformMatrix4fv(location ? location : -1, transpose ? transpose : false, buffer);
+			glAdapter.glUniformMatrix4fv(location, transpose !== undefined ? transpose : false, buffer);
 		}
 	},
 
@@ -347,7 +336,7 @@ globalThis.gl = {
 		if (arguments.length === 6) {
 			const target = arguments[0];
 			const level = arguments[1];
-			const internalformat = arguments[2];
+			const internalformat = (arguments[2] == GL11.GL_RGB) ? 0x8051 : 0x8058;
 			const format = arguments[3];
 			const type = arguments[4];
 			const source = arguments[5];
@@ -382,7 +371,7 @@ globalThis.gl = {
 				}
 				
 				// Convert to Java buffer
-				const buffer = bufferUtils.newByteBuffer(textureData.length);
+				const buffer = bufferUtils.createByteBuffer(textureData.length);
 				for (let i = 0; i < textureData.length; i++) {
 					buffer.put(i, textureData[i]);
 				}
@@ -393,7 +382,7 @@ globalThis.gl = {
 		} else if (arguments.length === 9) {
 			const target = arguments[0];
 			const level = arguments[1];
-			const internalformat = arguments[2];
+			const internalformat = (arguments[2] == GL11.GL_RGB) ? 0x8051 : 0x8058;
 			const width = arguments[3];
 			const height = arguments[4];
 			const border = arguments[5];
@@ -404,7 +393,7 @@ globalThis.gl = {
 			if (pixels === null || pixels === undefined) {
 				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, null);
 			} else if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
-				const buffer = bufferUtils.newByteBuffer(pixels.length);
+				const buffer = bufferUtils.createByteBuffer(pixels.length);
 				for (let i = 0; i < pixels.length; i++) {
 					buffer.put(i, pixels[i] & 0xFF);
 				}
@@ -412,6 +401,7 @@ globalThis.gl = {
 			} else {
 				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
 			}
+
 			return;
 		}
 		
@@ -497,22 +487,44 @@ globalThis.gl = {
 					}
 				}
 				
-				if (textureData) {
-					const buffer = bufferUtils.newByteBuffer(textureData.length);
-					for (let i = 0; i < textureData.length; i++) {
-						let byteValue = textureData[i] & 0xFF;
-						if (byteValue > 127) {
-							byteValue = byteValue - 256;
-						}
-						buffer.put(i, byteValue);
-					}
+				if (textureData && textureData instanceof Uint8Array) {
 					
-					const storageSize = width * height * 4;
-					const nullBuffer = bufferUtils.newByteBuffer(storageSize);
-					for (let i = 0; i < storageSize; i++) {
-						nullBuffer.put(i, 0);
+					// Create a Java primitive byte[] and fill it with signed bytes
+					const ByteArr = Java.type('byte[]');
+					const javaBytes = new ByteArr(textureData.length);
+				
+					for (let i = 0; i < textureData.length; i++) {
+						let v = textureData[i];
+						if (v > 127) v -= 256; // signed conversion
+						javaBytes[i] = v;      // Graal will store as Java byte
 					}
-					GL11.glTexImage2D(target, level, format, width, height, 0, format, type, nullBuffer);
+				
+					// Create a direct ByteBuffer and bulk-copy the Java byte[]
+					const buffer = bufferUtils.createByteBuffer(textureData.length);
+					buffer.clear();
+					buffer.put(javaBytes);   // uses ByteBuffer.put(byte[])
+					buffer.position(0);
+				
+					// --- Setup texture storage ---
+					let components, internalFormat;
+					if (format === GL11.GL_RGB) {
+						components = 3; internalFormat = GL11.GL_RGB8;
+					} else if (format === GL11.GL_RGBA) {
+						components = 4; internalFormat = GL11.GL_RGBA8;
+					} else {
+						throw new Error("Unsupported format: " + format);
+					}
+				
+					// allocate zeroed storage
+					const ByteArr2 = Java.type('byte[]');
+					const nullBytes = new ByteArr2(width * height * components); // default 0s
+					const nullBuffer = bufferUtils.createByteBuffer(nullBytes.length);
+					nullBuffer.clear();
+					nullBuffer.put(nullBytes);
+					nullBuffer.position(0);
+	
+					// Important: alignment and binding
+					GL11.glTexImage2D(target, level, internalFormat, width, height, 0, format, type, nullBuffer);
 					GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, buffer);
 				}
 			}
@@ -526,28 +538,108 @@ globalThis.gl = {
 			const format = arguments[6];
 			const type = arguments[7];
 			const pixels = arguments[8];
+
+			// condensed: no logging
+
+			// Clear any pre-existing GL errors to avoid confusing diagnostics
+			let _e = GL11.glGetError();
+			let clearedCount = 0;
+			while (_e !== GL11.GL_NO_ERROR && clearedCount < 16) {
+				clearedCount++;
+				_e = GL11.glGetError();
+			}
+			// (Suppress verbose cleared-count logging)
+
+			// Log the currently bound cube map texture (if any)
+			try {
+				const GL_TEXTURE_BINDING_CUBE_MAP = 0x8514; // GL13.GL_TEXTURE_BINDING_CUBE_MAP
+				GL11.glGetInteger(GL_TEXTURE_BINDING_CUBE_MAP);
+			} catch (ex) { /* optional on some drivers */ }
+
+			// Log immutable flag on the bound cubemap (if available)
+			let immutableFlag = 0;
+			try {
+				const GL_TEXTURE_CUBE_MAP = 0x8513;
+				const GL_TEXTURE_IMMUTABLE_FORMAT = 0x82DF;
+				immutableFlag = GL11.glGetTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT) | 0;
+			} catch (ex) { /* may not be supported on some paths */ }
 			
 			if (pixels && pixels instanceof Uint8Array) {
-				const buffer = bufferUtils.newByteBuffer(pixels.length);
+				// Create a Java primitive byte[] and fill it with signed bytes
+				const ByteArr = Java.type('byte[]');
+				const javaBytes = new ByteArr(pixels.length);
+			
 				for (let i = 0; i < pixels.length; i++) {
-					let byteValue = pixels[i] & 0xFF;
-					if (byteValue > 127) {
-						byteValue = byteValue - 256;
+					let v = pixels[i];
+					if (v > 127) v -= 256; // signed conversion
+					javaBytes[i] = v;      // Graal will store as Java byte
+				}
+			
+				// Create a direct ByteBuffer and bulk-copy the Java byte[]
+				const buffer = bufferUtils.createByteBuffer(pixels.length);
+				buffer.clear();
+				buffer.put(javaBytes);   // uses ByteBuffer.put(byte[])
+				buffer.position(0);
+			
+				// --- Setup texture storage ---
+				let components, internalFormat;
+				if (format === GL11.GL_RGB) {
+					components = 3; internalFormat = GL11.GL_RGB8;
+				} else if (format === GL11.GL_RGBA) {
+					components = 4; internalFormat = GL11.GL_RGBA8;
+				} else {
+					throw new Error("Unsupported format: " + format);
+				}
+			
+				// allocate zeroed storage
+				const ByteArr2 = Java.type('byte[]');
+				const nullBytes = new ByteArr2(width * height * components); // default 0s
+				const nullBuffer = bufferUtils.createByteBuffer(nullBytes.length);
+				nullBuffer.clear();
+				nullBuffer.put(nullBytes);
+				nullBuffer.position(0);
+
+				// Important: alignment and binding
+				// Ensure tight packing for any width
+				try { GL11.glPixelStorei(0x0CF5, 1); } catch (ex) { /* GL_UNPACK_ALIGNMENT */ }
+
+				// Check if storage already exists for this face/level
+				const GL_TEXTURE_WIDTH = 0x1000;
+				const GL_TEXTURE_HEIGHT = 0x1001;
+				const GL_TEXTURE_INTERNAL_FORMAT = 0x1003;
+				let existingW = 0, existingH = 0, existingIF = 0;
+				try {
+					existingW = GL11.glGetTexLevelParameteri(target, level, GL_TEXTURE_WIDTH);
+					existingH = GL11.glGetTexLevelParameteri(target, level, GL_TEXTURE_HEIGHT);
+					existingIF = GL11.glGetTexLevelParameteri(target, level, GL_TEXTURE_INTERNAL_FORMAT);
+					// no-op
+				} catch (ex) {
+					// Some drivers may not report per-face queries until after first definition
+				}
+
+				// If immutable storage is present, never attempt per-face allocation.
+				if (immutableFlag) {
+					// alloc skipped due to immutable storage
+				} else if (!(existingW > 0 && existingH > 0)) {
+					// Allocate storage for this face only if not already defined
+					// Important: allocate with NULL data to avoid driver validating a dummy client buffer
+					try { glAdapter.glTexImage2D(target, level, internalFormat, width, height, 0, format, type, null); } catch (ex) {
+						// Fallback: if null overload is not resolvable, use zero-sized direct buffer
+						GL11.glTexImage2D(target, level, internalFormat, width, height, 0, format, type, nullBuffer);
 					}
-					buffer.put(i, byteValue);
+					// suppress allocation error logging
+				} else {
+					// storage already defined
 				}
-				
-				// Allocate texture storage first
-				const storageSize = width * height * 4;
-				const nullBuffer = bufferUtils.newByteBuffer(storageSize);
-				for (let i = 0; i < storageSize; i++) {
-					nullBuffer.put(i, 0);
-				}
-				GL11.glTexImage2D(target, level, format, width, height, 0, format, type, nullBuffer);
+
+				// Upload subimage
 				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, buffer);
+
 			} else if (pixels) {
 				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 			}
+
+			// (suppress per-call GL error prints here to reduce noise)
 		}
 	},
 
@@ -576,23 +668,80 @@ globalThis.gl = {
 			glAdapter.glTexImage3D(target ? target : 0, level ? level : 0, internalformat ? internalformat : 0, 
 				width ? width : 0, height ? height : 0, depth ? depth : 0, border ? border : 0, format ? format : 0, type ? type : 0, null);
 		} else {
-			// Convert JavaScript typed array to Java ByteBuffer using BufferUtils
+			// Convert JavaScript typed array to Java ByteBuffer using proper signed byte conversion
 			let buffer = null;
 			if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
-				// Handle JavaScript typed arrays by converting to ByteBuffer
-				buffer = bufferUtils.newByteBuffer(pixels.length * 4); // Assume 4 bytes per element for safety
-				for (let i = 0; i < pixels.length; i++) {
-					buffer.putFloat(pixels[i]);
+				if (pixels instanceof Uint8Array) {
+					// Handle Uint8Array with proper signed byte conversion (same as texSubImage2D)
+					buffer = bufferUtils.createByteBuffer(pixels.length);
+					for (let i = 0; i < pixels.length; i++) {
+						let byteValue = pixels[i] & 0xFF;
+						if (byteValue > 127) {
+							byteValue = byteValue - 256;
+						}
+						buffer.put(i, byteValue);
+					}
+				} else {
+					// Handle other typed arrays by converting to ByteBuffer
+					buffer = bufferUtils.createByteBuffer(pixels.length * 4); // Assume 4 bytes per element for safety
+					for (let i = 0; i < pixels.length; i++) {
+						buffer.putFloat(pixels[i]);
+					}
+					buffer.flip();
 				}
-				buffer.flip();
 			}
 			glAdapter.glTexImage3D(target ? target : 0, level ? level : 0, internalformat ? internalformat : 0, 
 				width ? width : 0, height ? height : 0, depth ? depth : 0, border ? border : 0, format ? format : 0, type ? type : 0, buffer);
 		}
 	},
 
-	texSubImage3D: (target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels) => {
-		GL12.glTexSubImage3D(target ? target : 0, level ? level : 0, xoffset ? xoffset : 0, yoffset ? yoffset : 0, zoffset ? zoffset : 0, width ? width : 0, height ? height : 0, depth ? depth : 0, format ? format : 0, type ? type : 0, pixels);
+	texStorage2D: (target, levels, internalformat, width, height) => {
+		// Allocate immutable storage when available; otherwise gracefully fall back.
+		let _levels = (levels && levels > 0) ? levels : 1;
+		let _internal = internalformat ? internalformat : 0;
+		if (_internal === 0) {
+			// Defensive fallback: WebGL2 requires a valid sized internal format. Default to RGBA8.
+			_internal = GL11.GL_RGBA8;
+		}
+		try {
+			GL42.glTexStorage2D(target ? target : 0, _levels, _internal, width ? width : 0, height ? height : 0);
+			let e = GL11.glGetError();
+			if (e !== GL11.GL_NO_ERROR) {
+				// Driver reported error; use mutable fallback silently
+				try {
+					glAdapter.glTexImage2D(target ? target : 0, 0, _internal, width ? width : 0, height ? height : 0, 0, _internal === GL11.GL_RGBA8 ? GL11.GL_RGBA : GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, null);
+				} catch (ex) {
+					const comp = (_internal === GL11.GL_RGBA8) ? 4 : 3;
+					const nullBuf = bufferUtils.createByteBuffer((width ? width : 0) * (height ? height : 0) * comp);
+					GL11.glTexImage2D(target ? target : 0, 0, _internal, width ? width : 0, height ? height : 0, 0,
+						_internal === GL11.GL_RGBA8 ? GL11.GL_RGBA : GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, nullBuf);
+				}
+			}
+		} catch (e) {
+			// Extension not available; use mutable fallback.
+			try {
+				glAdapter.glTexImage2D(target ? target : 0, 0, _internal, width ? width : 0, height ? height : 0, 0, _internal === GL11.GL_RGBA8 ? GL11.GL_RGBA : GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, null);
+			} catch (ex) {
+				const comp = (_internal === GL11.GL_RGBA8) ? 4 : 3;
+				const nullBuf = bufferUtils.createByteBuffer((width ? width : 0) * (height ? height : 0) * comp);
+				GL11.glTexImage2D(target ? target : 0, 0, _internal, width ? width : 0, height ? height : 0, 0,
+					_internal === GL11.GL_RGBA8 ? GL11.GL_RGBA : GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, nullBuf);
+			}
+		}
+	},
+
+	texStorage3D: (target, levels, internalformat, width, height, depth) => {
+		try {
+			GL42.glTexStorage3D(target ? target : 0, levels ? levels : 1, internalformat ? internalformat : 0, width ? width : 0, height ? height : 0, depth ? depth : 0);
+		} catch (e) {
+			try {
+				glAdapter.glTexImage3D(target ? target : 0, 0, internalformat ? internalformat : 0, width ? width : 0, height ? height : 0, depth ? depth : 0, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, null);
+			} catch (ex) {
+				const comp = 4;
+				const nullBuf = bufferUtils.createByteBuffer((width ? width : 0) * (height ? height : 0) * (depth ? depth : 0) * comp);
+				GL12.glTexImage3D(target ? target : 0, 0, internalformat ? internalformat : 0, width ? width : 0, height ? height : 0, depth ? depth : 0, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, nullBuf);
+			}
+		}
 	},
 
 	drawArraysInstanced: (mode, first, count, instanceCount) => {
@@ -629,19 +778,19 @@ globalThis.gl = {
 
 	bufferSubData: (target, offset, data) => {
 		if (data instanceof Float32Array) {
-			const buffer = bufferUtils.newFloatBuffer(data.length);
+			const buffer = bufferUtils.createFloatBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
 				buffer.put(i, data[i]);
 			}
 			GL15.glBufferSubData(target ? target : 0, offset ? offset : 0, buffer);
 		} else if (data instanceof Uint16Array) {
-			const buffer = bufferUtils.newShortBuffer(data.length);
+			const buffer = bufferUtils.createShortBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
 				buffer.put(i, data[i]);
 			}
 			GL15.glBufferSubData(target ? target : 0, offset ? offset : 0, buffer);
 		} else if (data instanceof ArrayBuffer) {
-			const buffer = bufferUtils.newByteBuffer(data.byteLength);
+			const buffer = bufferUtils.createByteBuffer(data.byteLength);
 			const view = new Uint8Array(data);
 			for (let i = 0; i < view.length; i++) {
 				buffer.put(i, view[i]);
@@ -653,19 +802,19 @@ globalThis.gl = {
 	getBufferSubData: (target, offset, returnedData) => {
 		// WebGL2 buffer data readback - use GL15
 		if (returnedData instanceof Float32Array) {
-			const buffer = bufferUtils.newFloatBuffer(returnedData.length);
+			const buffer = bufferUtils.createFloatBuffer(returnedData.length);
 			GL15.glGetBufferSubData(target ? target : 0, offset ? offset : 0, buffer);
 			for (let i = 0; i < returnedData.length; i++) {
 				returnedData[i] = buffer.get(i);
 			}
 		} else if (returnedData instanceof Uint16Array) {
-			const buffer = bufferUtils.newShortBuffer(returnedData.length);
+			const buffer = bufferUtils.createShortBuffer(returnedData.length);
 			GL15.glGetBufferSubData(target ? target : 0, offset ? offset : 0, buffer);
 			for (let i = 0; i < returnedData.length; i++) {
 				returnedData[i] = buffer.get(i);
 			}
 		} else if (returnedData instanceof ArrayBuffer) {
-			const buffer = bufferUtils.newByteBuffer(returnedData.byteLength);
+			const buffer = bufferUtils.createByteBuffer(returnedData.byteLength);
 			GL15.glGetBufferSubData(target ? target : 0, offset ? offset : 0, buffer);
 			const view = new Uint8Array(returnedData);
 			for (let i = 0; i < view.length; i++) {
@@ -687,7 +836,7 @@ globalThis.gl = {
 
 	drawBuffers: (buffers) => {
 		if (buffers && buffers.length) {
-			const buffer = bufferUtils.newIntBuffer(buffers.length);
+			const buffer = bufferUtils.createIntBuffer(buffers.length);
 			for (let i = 0; i < buffers.length; i++) {
 				buffer.put(i, buffers[i]);
 			}
@@ -697,7 +846,7 @@ globalThis.gl = {
 
 	clearBufferfv: (buffer, drawbuffer, value) => {
 		if (value && value.length) {
-			const floatBuffer = bufferUtils.newFloatBuffer(value.length);
+			const floatBuffer = bufferUtils.createFloatBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				floatBuffer.put(i, value[i]);
 			}
@@ -707,7 +856,7 @@ globalThis.gl = {
 
 	clearBufferiv: (buffer, drawbuffer, value) => {
 		if (value && value.length) {
-			const intBuffer = bufferUtils.newIntBuffer(value.length);
+			const intBuffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				intBuffer.put(i, value[i]);
 			}
@@ -717,7 +866,7 @@ globalThis.gl = {
 
 	clearBufferuiv: (buffer, drawbuffer, value) => {
 		if (value && value.length) {
-			const intBuffer = bufferUtils.newIntBuffer(value.length);
+			const intBuffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				intBuffer.put(i, value[i]);
 			}
@@ -764,7 +913,7 @@ globalThis.gl = {
 	},
 
 	getIndexedParameter: (target, index) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL30.glGetIntegeri_v(target ? target : 0, index ? index : 0, buffer);
 		return buffer.get(0);
 	},
@@ -873,14 +1022,14 @@ globalThis.gl = {
 	readPixels: (x, y, width, height, format, type, pixels) => {
 		if (pixels && pixels.length) {
 			if (pixels instanceof Uint8Array) {
-				const buffer = bufferUtils.newByteBuffer(pixels.length);
+				const buffer = bufferUtils.createByteBuffer(pixels.length);
 				GL11.glReadPixels(x ? x : 0, y ? y : 0, width ? width : 0, height ? height : 0, 
 					format ? format : 0, type ? type : 0, buffer);
 				for (let i = 0; i < pixels.length; i++) {
 					pixels[i] = buffer.get(i);
 				}
 			} else if (pixels instanceof Float32Array) {
-				const buffer = bufferUtils.newFloatBuffer(pixels.length);
+				const buffer = bufferUtils.createFloatBuffer(pixels.length);
 				GL11.glReadPixels(x ? x : 0, y ? y : 0, width ? width : 0, height ? height : 0, 
 					format ? format : 0, type ? type : 0, buffer);
 				for (let i = 0; i < pixels.length; i++) {
@@ -914,13 +1063,13 @@ globalThis.gl = {
 	},
 
 	getQuery: (target, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL15.glGetQueryiv(target ? target : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
 
 	getQueryParameter: (query, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL15.glGetQueryObjectiv(query ? query : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
@@ -950,19 +1099,9 @@ globalThis.gl = {
 	},
 
 	getSamplerParameter: (sampler, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL33.glGetSamplerParameteriv(sampler ? sampler : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
-	},
-
-	texStorage2D: (target, levels, internalformat, width, height) => {
-		GL42.glTexStorage2D(target ? target : 0, levels ? levels : 0, internalformat ? internalformat : 0, 
-			width ? width : 0, height ? height : 0);
-	},
-
-	texStorage3D: (target, levels, internalformat, width, height, depth) => {
-		GL42.glTexStorage3D(target ? target : 0, levels ? levels : 0, internalformat ? internalformat : 0, 
-			width ? width : 0, height ? height : 0, depth ? depth : 0);
 	},
 
 	copyTexSubImage3D: (target, level, xoffset, yoffset, zoffset, x, y, width, height) => {
@@ -973,7 +1112,7 @@ globalThis.gl = {
 
 	compressedTexImage3D: (target, level, internalformat, width, height, depth, border, imageSize, data) => {
 		if (data && data.length) {
-			const buffer = bufferUtils.newByteBuffer(data.length);
+			const buffer = bufferUtils.createByteBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
 				buffer.put(i, data[i]);
 			}
@@ -987,7 +1126,7 @@ globalThis.gl = {
 
 	compressedTexSubImage3D: (target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data) => {
 		if (data && data.length) {
-			const buffer = bufferUtils.newByteBuffer(data.length);
+			const buffer = bufferUtils.createByteBuffer(data.length);
 			for (let i = 0; i < data.length; i++) {
 				buffer.put(i, data[i]);
 			}
@@ -1007,7 +1146,7 @@ globalThis.gl = {
 
 	getUniformIndices: (program, uniformNames) => {
 		if (uniformNames && uniformNames.length) {
-			const buffer = bufferUtils.newIntBuffer(uniformNames.length);
+			const buffer = bufferUtils.createIntBuffer(uniformNames.length);
 			for (let i = 0; i < uniformNames.length; i++) {
 				const index = GL31.glGetUniformIndex(program ? program : 0, uniformNames[i]);
 				buffer.put(i, index);
@@ -1023,11 +1162,11 @@ globalThis.gl = {
 
 	getActiveUniforms: (program, uniformIndices, pname) => {
 		if (uniformIndices && uniformIndices.length) {
-			const indexBuffer = bufferUtils.newIntBuffer(uniformIndices.length);
+			const indexBuffer = bufferUtils.createIntBuffer(uniformIndices.length);
 			for (let i = 0; i < uniformIndices.length; i++) {
 				indexBuffer.put(i, uniformIndices[i]);
 			}
-			const resultBuffer = bufferUtils.newIntBuffer(uniformIndices.length);
+			const resultBuffer = bufferUtils.createIntBuffer(uniformIndices.length);
 			GL31.glGetActiveUniformsiv(program ? program : 0, indexBuffer, pname ? pname : 0, resultBuffer);
 			const result = new Array(uniformIndices.length);
 			for (let i = 0; i < uniformIndices.length; i++) {
@@ -1039,7 +1178,7 @@ globalThis.gl = {
 	},
 
 	getActiveUniformBlockParameter: (program, uniformBlockIndex, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL31.glGetActiveUniformBlockiv(program ? program : 0, uniformBlockIndex ? uniformBlockIndex : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
@@ -1101,7 +1240,7 @@ globalThis.gl = {
 	},
 
 	getSyncParameter: (sync, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL32.glGetSynciv(sync ? sync : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
@@ -1118,7 +1257,7 @@ globalThis.gl = {
 
 	invalidateFramebuffer: (target, attachments) => {
 		if (attachments && attachments.length) {
-			const buffer = bufferUtils.newIntBuffer(attachments.length);
+			const buffer = bufferUtils.createIntBuffer(attachments.length);
 			for (let i = 0; i < attachments.length; i++) {
 				buffer.put(i, attachments[i]);
 			}
@@ -1128,7 +1267,7 @@ globalThis.gl = {
 
 	invalidateSubFramebuffer: (target, attachments, x, y, width, height) => {
 		if (attachments && attachments.length) {
-			const buffer = bufferUtils.newIntBuffer(attachments.length);
+			const buffer = bufferUtils.createIntBuffer(attachments.length);
 			for (let i = 0; i < attachments.length; i++) {
 				buffer.put(i, attachments[i]);
 			}
@@ -1142,7 +1281,7 @@ globalThis.gl = {
 	},
 
 	getInternalformatParameter: (target, internalformat, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL42.glGetInternalformativ(target ? target : 0, internalformat ? internalformat : 0, pname ? pname : 0, buffer);
 		return buffer.get(0);
 	},
@@ -1170,7 +1309,7 @@ globalThis.gl = {
 
 	uniform1uiv: (location, value) => {
 		if (value && value.length) {
-			const buffer = bufferUtils.newIntBuffer(value.length);
+			const buffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				buffer.put(i, value[i]);
 			}
@@ -1180,7 +1319,7 @@ globalThis.gl = {
 
 	uniform2uiv: (location, value) => {
 		if (value && value.length) {
-			const buffer = bufferUtils.newIntBuffer(value.length);
+			const buffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				buffer.put(i, value[i]);
 			}
@@ -1190,7 +1329,7 @@ globalThis.gl = {
 
 	uniform3uiv: (location, value) => {
 		if (value && value.length) {
-			const buffer = bufferUtils.newIntBuffer(value.length);
+			const buffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				buffer.put(i, value[i]);
 			}
@@ -1200,7 +1339,7 @@ globalThis.gl = {
 
 	uniform4uiv: (location, value) => {
 		if (value && value.length) {
-			const buffer = bufferUtils.newIntBuffer(value.length);
+			const buffer = bufferUtils.createIntBuffer(value.length);
 			for (let i = 0; i < value.length; i++) {
 				buffer.put(i, value[i]);
 			}
@@ -1270,7 +1409,7 @@ globalThis.gl = {
 	},
 
 	getFramebufferAttachmentParameter: (target, attachment, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL30.glGetFramebufferAttachmentParameteriv(target, attachment, pname, buffer);
 		return buffer.get(0);
 	},
@@ -1298,17 +1437,17 @@ globalThis.gl = {
 	},
 
 	getRenderbufferParameter: (target, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL30.glGetRenderbufferParameteriv(target, pname, buffer);
 		return buffer.get(0);
 	},
 
 	
 	getActiveUniform: (program, index) => {
-		const nameBuffer = bufferUtils.newByteBuffer(256);
-		const lengthBuffer = bufferUtils.newIntBuffer(1);
-		const sizeBuffer = bufferUtils.newIntBuffer(1);
-		const typeBuffer = bufferUtils.newIntBuffer(1);
+		const nameBuffer = bufferUtils.createByteBuffer(256);
+		const lengthBuffer = bufferUtils.createIntBuffer(1);
+		const sizeBuffer = bufferUtils.createIntBuffer(1);
+		const typeBuffer = bufferUtils.createIntBuffer(1);
 		
 		GL20.glGetActiveUniform(program, index, lengthBuffer, sizeBuffer, typeBuffer, nameBuffer);
 		
@@ -1326,10 +1465,10 @@ globalThis.gl = {
 	},
 
 	getActiveAttrib: (program, index) => {
-		const nameBuffer = bufferUtils.newByteBuffer(256);
-		const lengthBuffer = bufferUtils.newIntBuffer(1);
-		const sizeBuffer = bufferUtils.newIntBuffer(1);
-		const typeBuffer = bufferUtils.newIntBuffer(1);
+		const nameBuffer = bufferUtils.createByteBuffer(256);
+		const lengthBuffer = bufferUtils.createIntBuffer(1);
+		const sizeBuffer = bufferUtils.createIntBuffer(1);
+		const typeBuffer = bufferUtils.createIntBuffer(1);
 		
 		GL20.glGetActiveAttrib(program, index, lengthBuffer, sizeBuffer, typeBuffer, nameBuffer);
 		
@@ -1355,13 +1494,13 @@ globalThis.gl = {
 	},
 
 	getProgramParameter: (program, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetProgramiv(program, pname, buffer);
 		return buffer.get(0);
 	},
 
 	getShaderParameter: (shader, pname) => {
-		const buffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetShaderiv(shader, pname, buffer);
 		return buffer.get(0);
 	},
@@ -1370,8 +1509,8 @@ globalThis.gl = {
 		const length = gl.getProgramParameter(program, GL20.GL_INFO_LOG_LENGTH);
 		if (length <= 0) return "";
 		
-		const buffer = bufferUtils.newByteBuffer(length);
-		const lengthBuffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createByteBuffer(length);
+		const lengthBuffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetProgramInfoLog(program, lengthBuffer, buffer);
 		
 		const logBytes = new Array(lengthBuffer.get(0));
@@ -1385,8 +1524,8 @@ globalThis.gl = {
 		const length = gl.getShaderParameter(shader, GL20.GL_INFO_LOG_LENGTH);
 		if (length <= 0) return "";
 		
-		const buffer = bufferUtils.newByteBuffer(length);
-		const lengthBuffer = bufferUtils.newIntBuffer(1);
+		const buffer = bufferUtils.createByteBuffer(length);
+		const lengthBuffer = bufferUtils.createIntBuffer(1);
 		GL20.glGetShaderInfoLog(shader, lengthBuffer, buffer);
 		
 		const logBytes = new Array(lengthBuffer.get(0));
@@ -1400,7 +1539,7 @@ globalThis.gl = {
 	convertToFloatBuffer: (data) => {
 		if (!data) return null;
 		
-		const buffer = bufferUtils.newFloatBuffer(data.length);
+		const buffer = bufferUtils.createFloatBuffer(data.length);
 		for (let i = 0; i < data.length; i++) {
 			buffer.put(i, data[i]);
 		}

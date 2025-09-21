@@ -4,6 +4,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.BufferUtils;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -20,6 +21,11 @@ public class GLAdapter {
     // LibGDX-style texImage2D method with ByteBuffer parameter to avoid overload ambiguity
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, ByteBuffer pixels) {
         GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    }
+    
+    // LibGDX-style texSubImage2D method with ByteBuffer parameter to avoid overload ambiguity
+    public static void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, ByteBuffer pixels) {
+        GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
     }
     
     // LibGDX-style texImage3D method with ByteBuffer parameter to avoid overload ambiguity
@@ -92,7 +98,7 @@ public class GLAdapter {
     
     // Helper method to convert JavaScript array to FloatBuffer
     public static FloatBuffer createFloatBuffer(double[] values) {
-        FloatBuffer buffer = BufferUtils.newFloatBuffer(values.length);
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(values.length);
         for (int i = 0; i < values.length; i++) {
             buffer.put(i, (float) values[i]);
         }
@@ -102,9 +108,22 @@ public class GLAdapter {
     
     // Helper method to convert JavaScript array to IntBuffer
     public static IntBuffer createIntBuffer(double[] values) {
-        IntBuffer buffer = BufferUtils.newIntBuffer(values.length);
+        IntBuffer buffer = BufferUtils.createIntBuffer(values.length);
         for (int i = 0; i < values.length; i++) {
             buffer.put(i, (int) values[i]);
+        }
+        buffer.rewind();
+        return buffer;
+    }
+    
+    // Helper method to convert JavaScript Uint8Array to ByteBuffer with proper signed byte conversion
+    public static ByteBuffer createByteBuffer(Object[] values) {
+        ByteBuffer buffer = BufferUtils.createByteBuffer(values.length);
+        for (int i = 0; i < values.length; i++) {
+            // Convert unsigned int (0-255) to signed byte (-128 to 127)
+            int unsignedValue = ((Number) values[i]).intValue();
+            byte signedByte = (byte) (unsignedValue & 0xFF);
+            buffer.put(i, signedByte);
         }
         buffer.rewind();
         return buffer;
