@@ -155,6 +155,10 @@ public class JSContext implements AutoCloseable {
             if (uriStr.startsWith("three.") && uriStr.endsWith(".js")) {
                 return Paths.get("/virtual/" + uriStr);
             }
+            // Support resource-style absolute URIs for packaged mode
+            if (uriStr.startsWith("/scripts/") || uriStr.startsWith("/assets/")) {
+                return Paths.get(uriStr);
+            }
             return defaultFS.parsePath(uri);
         }
         
@@ -165,6 +169,10 @@ public class JSContext implements AutoCloseable {
             }
             if ("three.core.min.js".equals(path)) {
                 return Paths.get("/virtual/three.core.min.js");
+            }
+            // Support resource-style absolute paths for packaged mode
+            if (path != null && (path.startsWith("/scripts/") || path.startsWith("/assets/"))) {
+                return Paths.get(path);
             }
             return defaultFS.parsePath(path);
         }
@@ -179,6 +187,11 @@ public class JSContext implements AutoCloseable {
             String pathStr = path.toString().replace('\\', '/');
             if ("/virtual/three.core.min.js".equals(pathStr)) {
                 String content = loadResourceAsString("/three.core.min.js");
+                return createByteChannelFrom(content);
+            }
+            // Serve packaged resources for scripts and assets
+            if (pathStr.startsWith("/scripts/") || pathStr.startsWith("/assets/")) {
+                String content = loadResourceAsString(pathStr);
                 return createByteChannelFrom(content);
             }
             
@@ -244,6 +257,9 @@ public class JSContext implements AutoCloseable {
             String pathStr = path.toString().replace('\\', '/');
             if (THREE_MODULE_PATH.equals(path) || "/virtual/three.core.min.js".equals(pathStr)) {
                 return;
+            }
+            if (pathStr.startsWith("/scripts/") || pathStr.startsWith("/assets/")) {
+                return; // classpath resources are readable
             }
             defaultFS.checkAccess(path, modes, linkOptions);
         }

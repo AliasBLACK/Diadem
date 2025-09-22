@@ -1,7 +1,6 @@
 package black.alias.diadem.Loaders;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.*;
 import black.alias.diadem.JSContext;
 import black.alias.diadem.Settings;
@@ -23,13 +22,17 @@ public class ScriptManager {
     
     public void loadMainScript() throws IOException {
         String scriptName = settings.getMainScript();
-        // Always try to load from filesystem first for proper module resolution
+        
         Path mainScript = fallbackScriptsDirectory.resolve(scriptName);
         if (Files.exists(mainScript)) {
-            // Load from filesystem (development mode) - this gives proper module context
-            jsContext.executeModuleFromFile(mainScript.toString());
+            // Development mode: use file:// URL so relative imports resolve against the file location
+            String fileUrl = mainScript.toAbsolutePath().toUri().toString();
+            String importAndInstantiate = String.format(
+                "import Main from '%s'; globalThis.mainEntity = new Main();",
+                fileUrl
+            );
+            jsContext.executeModule(importAndInstantiate);
         } else if (useResources) {
-            // Fallback to resources (compiled/packaged mode) - limited module resolution
             loadScriptFromResource(scriptName);
         } else {
             throw new IOException("Script not found: " + mainScript);
@@ -37,12 +40,16 @@ public class ScriptManager {
     }
     
     private void loadScriptFromResource(String scriptName) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/scripts/" + scriptName)) {
-            if (is == null) {
-                throw new IOException("Script resource not found: /scripts/" + scriptName);
-            }
-            String scriptContent = new String(is.readAllBytes());
-            jsContext.executeModule(scriptContent);
+        try {
+            // Packaged mode: import using an absolute resource path so relative imports resolve
+            String resourcePath = "/scripts/" + scriptName;
+            String importAndInstantiate = String.format(
+                "import Main from '%s'; globalThis.mainEntity = new Main();",
+                resourcePath
+            );
+            jsContext.executeModule(importAndInstantiate);
+        } catch (Exception e) {
+            throw new IOException("Failed to load and instantiate Main entity from resource /scripts/" + scriptName + ": " + e.getMessage(), e);
         }
     }
     

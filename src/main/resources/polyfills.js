@@ -72,29 +72,25 @@ globalThis.AbortSignal = class AbortSignal {};
 globalThis.AbortController = class AbortController {};
 
 // Animation frame handling for Three.js
-const animationCallbacks = [];
+var currentAnimationFrameId = 0;
+const animationCallbacks = {};
 globalThis.requestAnimationFrame = (callback) => {
-    let id = animationCallbacks.indexOf(callback);
-    if (id >= 0)
-        return id;
-    animationCallbacks.push(callback);
-    return animationCallbacks.length - 1;   
+    animationCallbacks[currentAnimationFrameId] = callback;
+    return currentAnimationFrameId++;
 };
 globalThis.cancelAnimationFrame = (id) => {
-    animationCallbacks.splice(id, 1);
+    delete animationCallbacks[id];
 }
 
 // Update callbacks
-const updateCallbacks = []
+var currentUpdateId = 0;
+const updateCallbacks = {}
 globalThis.requestUpdate = (callback) => {
-    let id = updateCallbacks.indexOf(callback);
-    if (id >= 0)
-        return id;
-    updateCallbacks.push(callback);
-    return updateCallbacks.length - 1;
+    updateCallbacks[currentUpdateId] = callback;
+    return currentUpdateId++;
 }
 globalThis.cancelUpdate = (id) => {
-    updateCallbacks.splice(id, 1);
+    delete updateCallbacks[id];
 }
 
 // Run update callbacks at maximum FPS, run animation callbacks at 60 FPS.
@@ -105,9 +101,9 @@ globalThis.runCallbacks = () => {
     let delta = currentTime - timeLastFrame;
     timeLastFrame = currentTime;
     frameProgress += delta;
-    updateCallbacks.forEach(callback => callback(delta / 1000));
+    Object.values(updateCallbacks).forEach(callback => callback(delta / 1000));
     if (frameProgress >= 16) {
         frameProgress = 0;
-        animationCallbacks.forEach(callback => callback());
+        Object.values(animationCallbacks).forEach(callback => callback());
     }
 }

@@ -135,9 +135,9 @@ public class JSInit {
         
         if (jsContext != null) {
             try {
-                jsContext.executeScript("if (globalThis.threeJsApp) globalThis.threeJsApp.stop();");
+                jsContext.executeScript("if (globalThis.mainEntity) globalThis.mainEntity.stop();");
             } catch (Exception e) {
-                System.err.println("Error stopping Three.js render loop: " + e.getMessage());
+                System.err.println("Error stopping Main entity: " + e.getMessage());
             }
         }
     }
