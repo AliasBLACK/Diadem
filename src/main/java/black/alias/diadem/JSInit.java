@@ -25,17 +25,25 @@ public class JSInit {
     }
     
     public void run() {
+        // Initialize
         init();
+        
+        // Run loop
         loop();
         
+        // Close GLFW
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);
         glfwTerminate();
         glfwSetErrorCallback(null).free();
         
+        // Close JS context
         if (jsContext != null) {
             jsContext.close();
         }
+
+        // Close window
+        System.exit(0);
     }
     
     private void init() {
