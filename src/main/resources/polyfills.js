@@ -83,6 +83,31 @@ globalThis.requestAnimationFrame = (callback) => {
 globalThis.cancelAnimationFrame = (id) => {
     animationCallbacks.splice(id, 1);
 }
+
+// Update callbacks
+const updateCallbacks = []
+globalThis.requestUpdate = (callback) => {
+    let id = updateCallbacks.indexOf(callback);
+    if (id >= 0)
+        return id;
+    updateCallbacks.push(callback);
+    return updateCallbacks.length - 1;
+}
+globalThis.cancelUpdate = (id) => {
+    updateCallbacks.splice(id, 1);
+}
+
+// Run update callbacks at maximum FPS, run animation callbacks at 60 FPS.
+var timeLastFrame = Date.now();
+var frameProgress = 0;
 globalThis.runCallbacks = () => {
-    animationCallbacks.forEach(callback => callback());
+    let currentTime = Date.now();
+    let delta = currentTime - timeLastFrame;
+    timeLastFrame = currentTime;
+    frameProgress += delta;
+    updateCallbacks.forEach(callback => callback(delta / 1000));
+    if (frameProgress >= 16) {
+        frameProgress = 0;
+        animationCallbacks.forEach(callback => callback());
+    }
 }
