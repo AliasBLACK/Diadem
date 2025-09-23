@@ -1,4 +1,22 @@
 // Extensions
+globalThis.DIADEM = {}
+
+// Renderer
+DIADEM.Renderer = new THREE.WebGLRenderer({ context: gl });
+DIADEM.Renderer.autoClear = false;
+DIADEM.Renderer.antialias = true;
+DIADEM.Renderer.setPixelRatio(1);
+DIADEM.Renderer.setSize(1920, 1080);
+
+// Render functions
+DIADEM.Render = function (scene, camera) { DIADEM.Renderer.render(scene, camera); };
+DIADEM.Clear = function () { DIADEM.Renderer.clear(); };
+
+// Resize function
+DIADEM.Resize = function (w, h) {
+    DIADEM.Renderer.setSize(w, h);
+}
+
 globalThis.loadCubeTexture = function(filenames)
 {
     if (!(filenames && Array.isArray(filenames) && filenames.length == 6))

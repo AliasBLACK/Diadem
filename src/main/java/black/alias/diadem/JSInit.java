@@ -120,6 +120,7 @@ public class JSInit {
             jsContext.setupTextureLoader();
             assetManager.setupAssetLoader();
             jsContext.executeScriptFile("/extensions.js");
+            jsContext.executeScriptFile("/interface.js");
             scriptManager.loadMainScript();
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());
@@ -130,7 +131,7 @@ public class JSInit {
     private void loop() {
         while (!GLFW.glfwWindowShouldClose(window)) {
             GLFW.glfwPollEvents();
-            jsContext.executeScript("runCallbacks()");
+            jsContext.executeScript("DIADEM.Clear(); runCallbacks(); GUI.Render();");
             GLFW.glfwSwapBuffers(window);
             
             try {
@@ -143,6 +144,7 @@ public class JSInit {
         
         if (jsContext != null) {
             try {
+                jsContext.executeScript("GUI.Finalize();");
                 jsContext.executeScript("if (globalThis.mainEntity) globalThis.mainEntity.stop();");
             } catch (Exception e) {
                 System.err.println("Error stopping Main entity: " + e.getMessage());

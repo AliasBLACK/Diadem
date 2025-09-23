@@ -1,6 +1,7 @@
 const GL11 = Java.type('org.lwjgl.opengl.GL11');
 const GL12 = Java.type('org.lwjgl.opengl.GL12');
 const GL13 = Java.type('org.lwjgl.opengl.GL13');
+const GL14 = Java.type('org.lwjgl.opengl.GL14');
 const GL15 = Java.type('org.lwjgl.opengl.GL15');
 const GL20 = Java.type('org.lwjgl.opengl.GL20');
 const GL30 = Java.type('org.lwjgl.opengl.GL30');
