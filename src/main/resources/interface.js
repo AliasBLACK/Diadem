@@ -289,13 +289,15 @@ class Panel extends Node {
     }
     
     setChildOf(parent) {
-        GUI.SCENE.add(this.mesh);
+        if (this.mesh)
+            GUI.SCENE.add(this.mesh);
         super.setChildOf(parent);
         return this;
     }
 
     detach() {
-        GUI.SCENE.remove(this.mesh);
+        if (this.mesh)
+            GUI.SCENE.remove(this.mesh);
         super.detach();
         return this;
     }
