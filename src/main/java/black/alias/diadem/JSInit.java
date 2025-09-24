@@ -16,7 +16,6 @@ public class JSInit {
     private long window;
     private JSContext jsContext;
     private black.alias.diadem.Loaders.ScriptManager scriptManager;
-    private black.alias.diadem.Loaders.AssetManager assetManager;
     
     private Settings settings;
     
@@ -111,14 +110,12 @@ public class JSInit {
     private void initJSContext() {
         jsContext = new JSContext();
         scriptManager = new black.alias.diadem.Loaders.ScriptManager(jsContext);
-        assetManager = new black.alias.diadem.Loaders.AssetManager(jsContext);
 
         try {
             jsContext.executeScriptFile("/polyfills.js"); 
             jsContext.executeModule("import * as THREE from 'three'; globalThis.THREE = THREE;");
             jsContext.setupGLTFLoader();
             jsContext.setupTextureLoader();
-            assetManager.setupAssetLoader();
             jsContext.executeScriptFile("/extensions.js");
             scriptManager.loadMainScript();
         } catch (Exception e) {
