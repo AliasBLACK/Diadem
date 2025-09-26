@@ -114,6 +114,7 @@ public class TextureLoader {
      * Load image from either resources or filesystem based on mode
      */
     private BufferedImage loadImageFromPath(String texturePath) throws IOException {
+        texturePath = texturePath.replaceAll("^[/]*assets/", "");
         BufferedImage bufferedImage;
         
         if (useResources) {
@@ -175,6 +176,27 @@ public class TextureLoader {
         texture.putMember("needsUpdate", true);
         texture.putMember("flipY", false); // Important for proper orientation
         
+        return texture;
+    }
+
+    /**
+     * Public static utility to create a DataTexture from RGBA pixel data using a provided JS Context and THREE object.
+     * This allows other loaders (e.g., FontLoader) to convert CPU pixel buffers to GPU textures consistently.
+     */
+    public static Value createDataTextureFromPixelData(Context jsContext, Value threeJS, int[] pixelData, int width, int height) {
+        // Create Uint8Array in JavaScript
+        Value Uint8Array = jsContext.eval("js", "Uint8Array");
+        Value imageData = Uint8Array.newInstance(pixelData);
+
+        // Get Three.js classes
+        Value DataTexture = threeJS.getMember("DataTexture");
+        Value UnsignedByteType = threeJS.getMember("UnsignedByteType");
+        Value RGBAFormat = threeJS.getMember("RGBAFormat");
+
+        // Create Three.js DataTexture
+        Value texture = DataTexture.newInstance(imageData, width, height, RGBAFormat, UnsignedByteType);
+        texture.putMember("needsUpdate", true);
+        texture.putMember("flipY", false);
         return texture;
     }
     

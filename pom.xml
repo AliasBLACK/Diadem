@@ -152,6 +152,14 @@
       <groupId>org.lwjgl</groupId>
       <artifactId>lwjgl-yoga</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-freetype</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-msdfgen</artifactId>
+    </dependency>
     
     <!-- LWJGL Natives -->
     <dependency>
@@ -177,6 +185,16 @@
     <dependency>
       <groupId>org.lwjgl</groupId>
       <artifactId>lwjgl-yoga</artifactId>
+      <classifier>${lwjgl.natives}</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-freetype</artifactId>
+      <classifier>${lwjgl.natives}</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-msdfgen</artifactId>
       <classifier>${lwjgl.natives}</classifier>
     </dependency>
   </dependencies>

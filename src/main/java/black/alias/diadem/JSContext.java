@@ -16,12 +16,14 @@ import java.util.Set;
 import java.util.function.Function;
 import black.alias.diadem.Loaders.GLTFLoader;
 import black.alias.diadem.Loaders.TextureLoader;
+import black.alias.diadem.Loaders.FontLoader;
 
 public class JSContext implements AutoCloseable {
     private final Context jsContext;
     private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
     private GLTFLoader gltfLoaderInstance = null;
     private TextureLoader textureLoaderInstance = null;
+    private FontLoader fontLoaderInstance = null;
     
     public JSContext() {
         this.jsContext = Context.newBuilder("js")
@@ -39,6 +41,29 @@ public class JSContext implements AutoCloseable {
             jsContext.eval("js", bridgeScript);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load WebGL2 bridge script", e);
+        }
+    }
+
+    public void setupFontLoader() {
+        try {
+            bindTextureFunction("LoadFont", args -> {
+                if (args.length != 1) {
+                    throw new IllegalArgumentException("LoadFont requires 1 argument: filePath");
+                }
+                String filePath = (String) args[0];
+                return getFontLoader().LoadFont(filePath);
+            });
+            bindTextureFunction("LoadFontSDF", args -> {
+                if (args.length != 2) {
+                    throw new IllegalArgumentException("LoadFontSDF requires 2 arguments: filePath, size");
+                }
+                String filePath = (String) args[0];
+                int size = ((Number) args[1]).intValue();
+                return getFontLoader().LoadFontSDF(filePath, size);
+            });
+        } catch (Exception e) {
+            System.err.println("Failed to setup Font Loader: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -121,6 +146,14 @@ public class JSContext implements AutoCloseable {
             textureLoaderInstance = new TextureLoader(jsContext, threeJS);
         }
         return textureLoaderInstance;
+    }
+
+    private FontLoader getFontLoader() {
+        if (fontLoaderInstance == null) {
+            // FontLoader does not need THREE at construction time; it emits plain JS objects
+            fontLoaderInstance = new FontLoader(jsContext);
+        }
+        return fontLoaderInstance;
     }
     
     private void bindTextureFunction(String functionName, java.util.function.Function<Object[], Object> handler) {

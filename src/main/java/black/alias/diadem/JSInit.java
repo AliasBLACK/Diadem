@@ -58,6 +58,7 @@ public class JSInit {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_SAMPLES, 4);
         
         String osName = System.getProperty("os.name").toLowerCase();
         if (osName.contains("mac")) {
@@ -79,7 +80,7 @@ public class JSInit {
             throw new RuntimeException("Failed to create the GLFW window");
         }
         
-        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
+        glfwSetKeyCallback(window, (window, key, _, action, _) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 glfwSetWindowShouldClose(window, true);
             }
@@ -116,9 +117,11 @@ public class JSInit {
             jsContext.executeModule("import * as THREE from 'three'; globalThis.THREE = THREE;");
             jsContext.setupGLTFLoader();
             jsContext.setupTextureLoader();
+            jsContext.setupFontLoader();
             jsContext.executeScriptFile("/extensions.js");
             jsContext.executeScriptFile("/interface.js");
             scriptManager.loadMainScript();
+
         } catch (Exception e) {
             System.err.println("Failed to initialize JavaScript context: " + e.getMessage());
             e.printStackTrace();
@@ -128,11 +131,11 @@ public class JSInit {
     private void loop() {
         while (!GLFW.glfwWindowShouldClose(window)) {
             GLFW.glfwPollEvents();
-            jsContext.executeScript("DIADEM.Clear(); runCallbacks(); GUI.Render();");
+            jsContext.executeScript("runCallbacks(); GUI.Render();");
             GLFW.glfwSwapBuffers(window);
             
             try {
-                Thread.sleep(16);
+                Thread.sleep(1);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

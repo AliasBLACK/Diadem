@@ -89,18 +89,21 @@ class System extends Entity {
             .setJustifyContent(GUI.JUSTIFY_CENTER)
             .setAlignItems(GUI.ALIGN_CENTER);
         
-        GUI.Render = (() => {
-            DIADEM.Renderer.clearDepth();
-            DIADEM.Renderer.render(GUI.SCENE, this.camera);
-        }).bind(this);
+        // Render function
+        GUI.Render = (() => { ClearDepth(); Render(GUI.SCENE, this.camera, /* Clear */ false); }).bind(this);
     }
     
-    // Update layout
+    // Update function
     Update(_delta) {
+
+        // Update layout
         if (GUI.ROOT_NODE && GUI.ROOT_NODE.checkIfDirtied()) {
             GUI.ROOT_NODE.calculateLayout(this.width, this.height, GUI.DIRECTION_LTR);
             GUI.ROOT_NODE.updateFromLayout(0, 0);
         }
+
+        // Update UI Animations.
+
     }
     
     // Handle window resize
@@ -131,10 +134,13 @@ class Node {
         // Screen-space coordinates
         this.x = 0;
         this.y = 0;
-        this.xOffset = 0;
-        this.yOffset = 0;
         this.width = 0;
         this.height = 0;
+
+        // Animation offset.
+        this.isAnimating = false
+        this.animXOffset = 0;
+        this.animYOffset = 0;
 
         // Render depth (for sorting)
         this.depth = depth;
