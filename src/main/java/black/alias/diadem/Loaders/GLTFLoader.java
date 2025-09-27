@@ -345,7 +345,14 @@ public class GLTFLoader {
             if (tex != null) {
                 applyPBRTextureSettings(tex, true); // sRGB color space for emissive
                 material.putMember("emissiveMap", tex);
-                System.out.println("DEBUG: Emissive map applied: " + emissiveFile);
+                // Set emissive intensity and color to make it visible
+                Value Color = threeJS.getMember("Color");
+                if (Color != null) {
+                    Value emissiveColor = Color.newInstance(1.0, 1.0, 1.0); // White emissive
+                    material.putMember("emissive", emissiveColor);
+                    material.putMember("emissiveIntensity", 1.0); // Full intensity
+                }
+                System.out.println("DEBUG: Emissive map applied with intensity: " + emissiveFile);
             }
         }
     }
