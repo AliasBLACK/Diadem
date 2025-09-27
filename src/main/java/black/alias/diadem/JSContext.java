@@ -66,10 +66,22 @@ public class JSContext implements AutoCloseable {
     }
     
     private void bindGLTFFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
-        jsContext.getBindings("js").putMember(functionName, new Function<Object[], Object>() {
+        jsContext.getBindings("js").putMember(functionName, new org.graalvm.polyglot.proxy.ProxyExecutable() {
             @Override
-            public Object apply(Object[] args) {
-                return handler.apply(args);
+            public Object execute(Value... args) {
+                // Convert GraalVM Value[] to Object[] similarly to texture functions
+                Object[] argsArray = new Object[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    if (args[i].isString()) {
+                        argsArray[i] = args[i].asString();
+                    } else if (args[i].isNumber()) {
+                        // default to int for numeric values (paths are strings anyway)
+                        argsArray[i] = args[i].asInt();
+                    } else {
+                        argsArray[i] = args[i];
+                    }
+                }
+                return handler.apply(argsArray);
             }
         });
     }
