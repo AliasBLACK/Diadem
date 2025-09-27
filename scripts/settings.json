@@ -2,6 +2,7 @@
     "windowTitle": "Diadem Game Engine",    // Window title
     "resolutionWidth": 1920,                // Window width
     "resolutionHeight": 1080,                // Window height
+    "vsync": false,                         // VSync
     "fullscreen": false,                    // Fullscreen mode
     "savePrefix": "save",                   // Save file prefix
     "saveEncryptionKey": "625",             // Save file encryption key

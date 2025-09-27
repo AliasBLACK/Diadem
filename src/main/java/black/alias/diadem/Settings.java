@@ -11,6 +11,7 @@ public class Settings {
     private int resolutionWidth = 1024;
     private int resolutionHeight = 576;
     private boolean fullscreen = false;
+    private boolean vsync = true;
     private String savePrefix = "save";
     private String saveEncryptionKey = "625";
     private String mainScript = "main.js";
@@ -58,6 +59,7 @@ public class Settings {
         resolutionWidth = extractIntValue(cleanJson, "resolutionWidth", resolutionWidth);
         resolutionHeight = extractIntValue(cleanJson, "resolutionHeight", resolutionHeight);
         fullscreen = extractBooleanValue(cleanJson, "fullscreen", fullscreen);
+        vsync = extractBooleanValue(cleanJson, "vsync", vsync);
         savePrefix = extractStringValue(cleanJson, "savePrefix", savePrefix);
         saveEncryptionKey = extractStringValue(cleanJson, "saveEncryptionKey", saveEncryptionKey);
         mainScript = extractStringValue(cleanJson, "mainScript", mainScript);
@@ -110,6 +112,7 @@ public class Settings {
     public int getResolutionWidth() { return resolutionWidth; }
     public int getResolutionHeight() { return resolutionHeight; }
     public boolean isFullscreen() { return fullscreen; }
+    public boolean isVsync() { return vsync; }
     public String getSavePrefix() { return savePrefix; }
     public String getSaveEncryptionKey() { return saveEncryptionKey; }
     public String getMainScript() { return mainScript; }
