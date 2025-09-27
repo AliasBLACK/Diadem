@@ -13,7 +13,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
-import java.util.function.Function;
 import black.alias.diadem.Loaders.GLTFLoader;
 import black.alias.diadem.Loaders.TextureLoader;
 
