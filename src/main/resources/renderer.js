@@ -387,7 +387,7 @@ globalThis.gl = {
 			const height = arguments[4];
 			const border = arguments[5];
 			const format = arguments[6];
-			const type = arguments[7];
+			let type = arguments[7];
 			const pixels = arguments[8];
 			
 			if (pixels === null || pixels === undefined) {
@@ -536,7 +536,7 @@ globalThis.gl = {
 			const width = arguments[4];
 			const height = arguments[5];
 			const format = arguments[6];
-			const type = arguments[7];
+			let type = arguments[7];
 			const pixels = arguments[8];
 
 			// condensed: no logging
@@ -564,6 +564,35 @@ globalThis.gl = {
 				immutableFlag = GL11.glGetTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT) | 0;
 			} catch (ex) { /* may not be supported on some paths */ }
 			
+			// HALF_FLOAT support: when pixels is Uint16Array, allocate 16F storage and upload with GL_HALF_FLOAT
+			if (pixels && pixels instanceof Uint16Array) {
+				const GL_HALF_FLOAT = 0x140B;
+				const GL_RGB16F = 0x881B;
+				const GL_RGBA16F = 0x881A;
+				let components = 0;
+				let internalFormat = 0;
+				if (format === GL11.GL_RGB) { components = 3; internalFormat = GL_RGB16F; }
+				else if (format === GL11.GL_RGBA) { components = 4; internalFormat = GL_RGBA16F; }
+				else { throw new Error("Unsupported format for Uint16Array HALF_FLOAT: " + format); }
+
+				// Prepare ShortBuffer for data
+				const shortBuffer = bufferUtils.createShortBuffer(pixels.length);
+				for (let i = 0; i < pixels.length; i++) { shortBuffer.put(i, pixels[i] & 0xFFFF); }
+
+				// Allocate storage with null data first
+				const ByteArr2 = Java.type('byte[]');
+				const nullBytes = new ByteArr2(width * height * components * 2);
+				const nullBuffer = bufferUtils.createByteBuffer(nullBytes.length);
+				nullBuffer.clear();
+				nullBuffer.put(nullBytes);
+				nullBuffer.position(0);
+				try { GL11.glPixelStorei(0x0CF5, 1); } catch (ex) { /* GL_UNPACK_ALIGNMENT */ }
+				try { glAdapter.glTexImage2D(target, level, internalFormat, width, height, 0, format, GL_HALF_FLOAT, null); }
+				catch (ex) { GL11.glTexImage2D(target, level, internalFormat, width, height, 0, format, GL_HALF_FLOAT, nullBuffer); }
+				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, GL_HALF_FLOAT, shortBuffer);
+				return;
+			}
+
 			if (pixels && pixels instanceof Uint8Array) {
 				// Create a Java primitive byte[] and fill it with signed bytes
 				const ByteArr = Java.type('byte[]');

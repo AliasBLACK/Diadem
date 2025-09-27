@@ -80,6 +80,10 @@ public class JSContext implements AutoCloseable {
                 String texturePath = (String) args[0];
                 return getTextureLoader().loadTexture(texturePath);
             });
+            bindTextureFunction("loadHDRTexture", args -> {
+                String texturePath = (String) args[0];
+                return getTextureLoader().loadHDRTexture(texturePath);
+            });
             
             bindTextureFunction("loadTextureWithSize", args -> {
                 if (args.length != 3) {

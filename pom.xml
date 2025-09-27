@@ -149,6 +149,10 @@
       <artifactId>lwjgl3-awt</artifactId>
       <version>0.2.3</version>
     </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-stb</artifactId>
+    </dependency>
     
     <!-- LWJGL Natives -->
     <dependency>
@@ -164,6 +168,11 @@
     <dependency>
       <groupId>org.lwjgl</groupId>
       <artifactId>lwjgl-assimp</artifactId>
+      <classifier>${lwjgl.natives}</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-stb</artifactId>
       <classifier>${lwjgl.natives}</classifier>
     </dependency>
   </dependencies>

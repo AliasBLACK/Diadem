@@ -1,10 +1,39 @@
 // Extensions
 globalThis.loadCubeTexture = function(filenames)
 {
+    // Validate arguments
     if (!(filenames && Array.isArray(filenames) && filenames.length == 6))
         throw new Error("loadCubeTexture requires 6 face paths in order: +X, -X, +Y, -Y, +Z, -Z");
-    const cubeTexture = new THREE.CubeTexture(filenames.map(f => loadTexture(f)));
+    
+    // Load faces
+    const faces = filenames.map(path => loadTexture(path));
+
+    // Validate that all faces were loaded successfully
+    for (let i = 0; i < faces.length; i++) {
+        if (!faces[i]) {
+            const p = filenames[i];
+            throw new Error(`loadCubeTexture: failed to load face[${i}] => ${p}`);
+        }
+    }
+
+    // Create cube texture
+    const cubeTexture = new THREE.CubeTexture(faces);
+    
+    // Set HDR-friendly parameters if any face is HDR
+    const hasHDR = faces.some(t => t && t.type === THREE.HalfFloatType);
+    if (hasHDR) {
+        cubeTexture.type = THREE.HalfFloatType;
+        cubeTexture.format = THREE.RGBFormat;
+        cubeTexture.colorSpace = THREE.LinearSRGBColorSpace;
+        cubeTexture.minFilter = THREE.LinearFilter;
+        cubeTexture.magFilter = THREE.LinearFilter;
+        cubeTexture.generateMipmaps = false;
+    }
+
+    // Mark as needsUpdate
     cubeTexture.needsUpdate = true;
+
+    // Return cube texture
     return cubeTexture;
 }
 

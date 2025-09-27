@@ -9,6 +9,11 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.Context;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.stb.STBImage;
 
 /**
  * Dedicated texture loading utility for creating Three.js DataTextures from image files
@@ -30,10 +35,132 @@ public class TextureLoader {
     }
     
     /**
+     * Load HDR texture (.hdr) using STB and create a Three.js DataTexture with HalfFloatType (RGB)
+     */
+    public Value loadHDRTexture(String texturePath) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            ByteBuffer fileBytes = readFileToByteBuffer(texturePath);
+            if (fileBytes == null) {
+                System.err.println("HDR file not found: " + texturePath);
+                return null;
+            }
+
+            // Query image info
+            var w = stack.mallocInt(1);
+            var h = stack.mallocInt(1);
+            var comp = stack.mallocInt(1);
+            if (!STBImage.stbi_info_from_memory(fileBytes, w, h, comp)) {
+                System.err.println("stbi_info_from_memory failed: " + STBImage.stbi_failure_reason());
+                return null;
+            }
+
+            // Load as float RGB data
+            FloatBuffer hdrData = STBImage.stbi_loadf_from_memory(fileBytes, w, h, comp, 3);
+            if (hdrData == null) {
+                System.err.println("stbi_loadf_from_memory failed: " + STBImage.stbi_failure_reason());
+                return null;
+            }
+            int width = w.get(0);
+            int height = h.get(0);
+
+            try {
+                // Convert float32 to 16-bit half floats as per Three.js RGBELoader pattern
+                int numPixels = width * height;
+                int[] halfFloatData = new int[numPixels * 3]; // RGB
+                for (int i = 0; i < numPixels; i++) {
+                    float r = hdrData.get(i * 3);
+                    float g = hdrData.get(i * 3 + 1);
+                    float b = hdrData.get(i * 3 + 2);
+                    halfFloatData[i * 3] = floatToHalf(r);
+                    halfFloatData[i * 3 + 1] = floatToHalf(g);
+                    halfFloatData[i * 3 + 2] = floatToHalf(b);
+                }
+
+                // Create Uint16Array in JS and then DataTexture(HalfFloatType, RGB)
+                Value Uint16Array = jsContext.eval("js", "Uint16Array");
+                Value imageData = Uint16Array.newInstance(halfFloatData);
+
+                Value DataTexture = threeJS.getMember("DataTexture");
+                Value HalfFloatType = threeJS.getMember("HalfFloatType");
+                Value RGBFormat = threeJS.getMember("RGBFormat");
+                Value LinearSRGBColorSpace = threeJS.getMember("LinearSRGBColorSpace");
+                Value LinearFilter = threeJS.getMember("LinearFilter");
+
+                Value texture = DataTexture.newInstance(imageData, width, height, RGBFormat, HalfFloatType);
+                texture.putMember("needsUpdate", true);
+                texture.putMember("flipY", false);
+                texture.putMember("colorSpace", LinearSRGBColorSpace);
+                texture.putMember("generateMipmaps", false);
+                texture.putMember("minFilter", LinearFilter);
+                texture.putMember("magFilter", LinearFilter);
+                return texture;
+
+            } finally {
+                STBImage.stbi_image_free(hdrData);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading HDR texture: " + texturePath + " - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private ByteBuffer readFileToByteBuffer(String texturePath) throws IOException {
+        byte[] bytes;
+        if (useResources) {
+            try (InputStream is = getClass().getResourceAsStream("/assets/" + texturePath)) {
+                if (is == null) return null;
+                bytes = is.readAllBytes();
+            }
+        } else {
+            Path imagePath = fallbackAssetsDirectory.resolve(texturePath);
+            if (!Files.exists(imagePath)) return null;
+            bytes = Files.readAllBytes(imagePath);
+        }
+        ByteBuffer buf = BufferUtils.createByteBuffer(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
+    }
+
+    // Float32 to Half-float (IEEE 754 binary16) conversion
+    private int floatToHalf(float val) {
+        int floatBits = Float.floatToIntBits(val);
+        int sign = (floatBits >>> 16) & 0x8000;
+        int mant = (floatBits & 0x007FFFFF);
+        int exp  = (floatBits >>> 23) & 0xFF;
+
+        if (exp < 103) {
+            return sign;
+        }
+        if (exp > 142) {
+            int bits = sign | 0x7C00;
+            bits |= (exp == 255 && mant != 0) ? 1 : 0;
+            return bits;
+        }
+        if (exp < 113) {
+            mant |= 0x00800000;
+            int t = 113 - exp;
+            int bits = sign | (mant >> (t + 13));
+            if (((mant >> (t + 12)) & 1) != 0) bits++;
+            return bits;
+        }
+        int bits = sign | ((exp - 112) << 10) | (mant >> 13);
+        if ((mant & 0x00001000) != 0) bits++;
+        return bits & 0xFFFF;
+    }
+    /**
      * Load texture from image file and create Three.js DataTexture
      */
     public Value loadTexture(String texturePath) {
         try {
+            // Auto-detect HDR by file extension and delegate
+            if (texturePath != null) {
+                String lower = texturePath.toLowerCase();
+                if (lower.endsWith(".hdr")) {
+                    return loadHDRTexture(texturePath);
+                }
+            }
             // Load image using Java ImageIO
             BufferedImage bufferedImage = loadImageFromPath(texturePath);
             
