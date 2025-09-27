@@ -239,7 +239,14 @@ globalThis.gl = {
 	},
 
 	uniform1i: (location, value) => {
-		GL20.glUniform1i(location, value !== undefined ? value : 0);
+		// Convert boolean to int: false->0, true->1
+		let intValue = value;
+		if (typeof value === 'boolean') {
+			intValue = value ? 1 : 0;
+		} else if (value === undefined || value === null) {
+			intValue = 0;
+		}
+		GL20.glUniform1i(location, intValue);
 	},
 
 	uniform2f: (location, x, y) => {
@@ -334,12 +341,19 @@ globalThis.gl = {
 
 	texImage2D: function() {
 		if (arguments.length === 6) {
-			const target = arguments[0];
-			const level = arguments[1];
-			const internalformat = (arguments[2] == GL11.GL_RGB) ? 0x8051 : 0x8058;
-			const format = arguments[3];
-			const type = arguments[4];
+			const target = arguments[0] || 0;
+			const level = arguments[1] || 0;
+			let internalformat = arguments[2];
+			let format = arguments[3];
+			let type = arguments[4];
 			const source = arguments[5];
+
+			// Defensive defaults
+			if (format === undefined || format === null) format = GL11.GL_RGBA;
+			if (type === undefined || type === null) type = GL11.GL_UNSIGNED_BYTE;
+			if (internalformat === undefined || internalformat === null) {
+				internalformat = (format === GL11.GL_RGB) ? GL11.GL_RGB8 : GL11.GL_RGBA8;
+			}
 			
 			if (source && source.width && source.height && (source.data || source.constructor?.name === 'ImageBitmap')) {
 				const textureData = new Uint8Array(source.width * source.height * 4);
@@ -376,30 +390,51 @@ globalThis.gl = {
 					buffer.put(i, textureData[i]);
 				}
 				
-				GL11.glTexImage2D(target, level, internalformat, source.width, source.height, 0, format, type, buffer);
+				GL11.glTexImage2D(target, level, internalformat, source.width || 0, source.height || 0, 0, format, type, buffer);
 				return;
 			}
 		} else if (arguments.length === 9) {
-			const target = arguments[0];
-			const level = arguments[1];
-			const internalformat = (arguments[2] == GL11.GL_RGB) ? 0x8051 : 0x8058;
-			const width = arguments[3];
-			const height = arguments[4];
-			const border = arguments[5];
-			const format = arguments[6];
+			const target = arguments[0] || 0;
+			const level = arguments[1] || 0;
+			let internalformat = arguments[2];
+			let width = arguments[3] || 0;
+			let height = arguments[4] || 0;
+			const border = arguments[5] || 0;
+			let format = arguments[6];
 			let type = arguments[7];
 			const pixels = arguments[8];
+
+			// Defensive defaults for enums
+			if (format === undefined || format === null) format = GL11.GL_RGBA;
+			if (type === undefined || type === null) type = GL11.GL_UNSIGNED_BYTE;
+			if (internalformat === undefined || internalformat === null) {
+				internalformat = (format === GL11.GL_RGB) ? GL11.GL_RGB8 : GL11.GL_RGBA8;
+			}
 			
 			if (pixels === null || pixels === undefined) {
-				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, null);
+				try {
+					glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, null);
+				} catch (ex) {
+					const comp = (format === GL11.GL_RGB) ? 3 : 4;
+					const zero = bufferUtils.createByteBuffer(width * height * comp);
+					GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, zero);
+				}
 			} else if (pixels && typeof pixels === 'object' && pixels.length !== undefined) {
 				const buffer = bufferUtils.createByteBuffer(pixels.length);
 				for (let i = 0; i < pixels.length; i++) {
 					buffer.put(i, pixels[i] & 0xFF);
 				}
-				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, buffer);
+				try {
+					glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, buffer);
+				} catch (ex) {
+					GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, buffer);
+				}
 			} else {
-				glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+				try {
+					glAdapter.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+				} catch (ex) {
+					GL11.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+				}
 			}
 
 			return;

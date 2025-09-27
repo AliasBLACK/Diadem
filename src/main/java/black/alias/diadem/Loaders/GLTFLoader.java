@@ -18,11 +18,28 @@ public class GLTFLoader {
     private final Context jsContext;
     private final Value threeJS;
     private final TextureLoader textureLoader;
+    private String modelBaseDir = ""; // path relative to assets/ for resolving textures
     
     public GLTFLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
         this.jsContext = jsContext;
         this.threeJS = threeJS;
         this.textureLoader = textureLoader;
+    }
+
+    // Compute base directory inside assets/ for resolving texture files referenced by the model
+    private String computeBaseDirRelativeToAssets(String filePath) {
+        if (filePath == null) return "";
+        String p = filePath.replace('\\', '/');
+        // Expect paths like "assets/models/.../file.gltf" in dev mode
+        final String assetsPrefix = "assets/";
+        if (p.startsWith(assetsPrefix)) {
+            p = p.substring(assetsPrefix.length());
+        }
+        int idx = p.lastIndexOf('/');
+        if (idx >= 0) {
+            return p.substring(0, idx);
+        }
+        return "";
     }
     
     /**
@@ -32,25 +49,16 @@ public class GLTFLoader {
         // Load the scene using Assimp
         AIScene scene = aiImportFile(filePath, 
             aiProcess_Triangulate | 
-            aiProcess_FlipUVs | 
+            aiProcess_FlipUVs | // Re-add UV flipping for Assimp
             aiProcess_CalcTangentSpace |
             aiProcess_JoinIdenticalVertices);
             
         if (scene == null) {
             throw new RuntimeException("Failed to load GLTF file: " + filePath + " - " + aiGetErrorString());
         }
-        
-        try {
-            return convertToThreeJS(scene);
-        } finally {
-            aiReleaseImport(scene);
-        }
-    }
-    
-    /**
-     * Convert Assimp scene to Three.js GLTF-compatible object
-     */
-    private Value convertToThreeJS(AIScene scene) {
+        // Compute base directory relative to assets/ for resolving textures
+        this.modelBaseDir = computeBaseDirRelativeToAssets(filePath);
+
         // Create Three.js Group for the scene
         Value Group = threeJS.getMember("Group");
         Value rootGroup = Group.newInstance();
@@ -139,15 +147,36 @@ public class GLTFLoader {
         
         // Extract UV coordinates if available
         AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
+        Value uvAttribute = null;
         if (texCoords != null) {
             float[] uvArray = new float[mesh.mNumVertices() * 2];
+            float minU = Float.MAX_VALUE, maxU = Float.MIN_VALUE;
+            float minV = Float.MAX_VALUE, maxV = Float.MIN_VALUE;
+            
             for (int i = 0; i < mesh.mNumVertices(); i++) {
                 AIVector3D texCoord = texCoords.get(i);
-                uvArray[i * 2] = texCoord.x();
-                uvArray[i * 2 + 1] = texCoord.y();
+                float u = texCoord.x();
+                float v = texCoord.y();
+                
+                // Fix V coordinate offset - normalize to [0,1] range
+                if (v > 1.0f) {
+                    v = v - 1.0f; // Shift V coordinates down by 1.0
+                }
+                
+                uvArray[i * 2] = u;
+                uvArray[i * 2 + 1] = v;
+                
+                // Track UV bounds for debugging
+                minU = Math.min(minU, u); maxU = Math.max(maxU, u);
+                minV = Math.min(minV, v); maxV = Math.max(maxV, v);
             }
-            Value uvAttribute = Float32BufferAttribute.newInstance(uvArray, 2);
+            
+            System.out.println("DEBUG: UV bounds - U: [" + minU + ", " + maxU + "], V: [" + minV + ", " + maxV + "]");
+            
+            uvAttribute = Float32BufferAttribute.newInstance(uvArray, 2);
             geometry.invokeMember("setAttribute", "uv", uvAttribute);
+            // Duplicate uv to uv2 so aoMap can work if present
+            geometry.invokeMember("setAttribute", "uv2", uvAttribute);
         }
         
         // Extract indices
@@ -168,20 +197,15 @@ public class GLTFLoader {
             geometry.invokeMember("setIndex", indexAttribute);
         }
         
-        // Create material (use MeshLambertMaterial for proper lighting)
-        Value MeshLambertMaterial = threeJS.getMember("MeshLambertMaterial");
-        Value material = MeshLambertMaterial.newInstance();
+        // Create material (use MeshStandardMaterial for PBR)
+        Value MeshStandardMaterial = threeJS.getMember("MeshStandardMaterial");
+        Value material = MeshStandardMaterial.newInstance();
+        // Reasonable defaults if no textures
+        material.putMember("metalness", 0.2);
+        material.putMember("roughness", 0.6);
         
-        // Try to load texture if available
-        Value texture = loadMeshTexture(mesh, scene);
-        if (texture != null) {
-            material.putMember("map", texture);
-        } else {
-            // Set a visible color if no texture
-            Value Color = threeJS.getMember("Color");
-            Value color = Color.newInstance(0xffffff); // White color to show lighting properly
-            material.putMember("color", color);
-        }
+        // PBR texture set
+        assignPBRTextures(material, mesh, scene);
         
         
         // Create mesh
@@ -201,15 +225,17 @@ public class GLTFLoader {
             if (mesh.mMaterialIndex() >= 0 && mesh.mMaterialIndex() < scene.mNumMaterials()) {
                 AIMaterial material = AIMaterial.create(scene.mMaterials().get(mesh.mMaterialIndex()));
                 
-                // Try to get diffuse texture
+                // Try base color first (glTF2), then diffuse as fallback
                 AIString texturePath = AIString.create();
-                int result = aiGetMaterialTexture(material, aiTextureType_DIFFUSE, 0, texturePath, (int[])null, null, null, null, null, null);
+                int result = aiGetMaterialTexture(material, aiTextureType_BASE_COLOR, 0, texturePath, (int[])null, null, null, null, null, null);
+                if (result != aiReturn_SUCCESS) {
+                    result = aiGetMaterialTexture(material, aiTextureType_DIFFUSE, 0, texturePath, (int[])null, null, null, null, null, null);
+                }
                 
                 if (result == aiReturn_SUCCESS) {
                     String textureFile = texturePath.dataString();
-                    
-                    // Use the existing TextureLoader instead of duplicating code
-                    return textureLoader.loadTexture(textureFile);
+                    String resolved = resolveTextureRelativeToAssets(textureFile);
+                    return textureLoader.loadTexture(resolved);
                 }
             }
         } catch (Exception e) {
@@ -218,5 +244,205 @@ public class GLTFLoader {
         }
         
         return null;
+    }
+
+    // Populate PBR texture slots on a MeshStandardMaterial
+    private void assignPBRTextures(Value material, AIMesh mesh, AIScene scene) {
+        if (mesh.mMaterialIndex() < 0 || mesh.mMaterialIndex() >= scene.mNumMaterials()) return;
+        AIMaterial aiMat = AIMaterial.create(scene.mMaterials().get(mesh.mMaterialIndex()));
+
+        // Helper to query a texture of a given type
+        java.util.function.Function<Integer, String> queryTex = (type) -> {
+            AIString path = AIString.create();
+            int res = aiGetMaterialTexture(aiMat, type, 0, path, (int[])null, null, null, null, null, null);
+            if (res == aiReturn_SUCCESS) return path.dataString();
+            return null;
+        };
+
+        // Base color (albedo) - DIAGNOSTIC: Force simple color instead of texture
+        String baseColorFile = queryTex.apply(aiTextureType_BASE_COLOR);
+        if (baseColorFile == null) baseColorFile = queryTex.apply(aiTextureType_DIFFUSE);
+        System.out.println("DEBUG: Base color texture file: " + baseColorFile);
+        
+        // Re-enable base color texture with corrected settings
+        if (baseColorFile != null) {
+            String resolved = resolveTextureRelativeToAssets(baseColorFile);
+            System.out.println("DEBUG: Loading texture: " + resolved);
+            Value tex = textureLoader.loadTexture(resolved);
+            if (tex != null) {
+                // Try clamped wrapping to prevent UV issues
+                Value ClampToEdgeWrapping = threeJS.getMember("ClampToEdgeWrapping");
+                if (ClampToEdgeWrapping != null) {
+                    tex.putMember("wrapS", ClampToEdgeWrapping);
+                    tex.putMember("wrapT", ClampToEdgeWrapping);
+                }
+                tex.putMember("flipY", false); // Back to GLTF standard
+                tex.putMember("generateMipmaps", false); // Disable mipmaps for now
+                Value LinearFilter = threeJS.getMember("LinearFilter");
+                if (LinearFilter != null) {
+                    tex.putMember("minFilter", LinearFilter);
+                    tex.putMember("magFilter", LinearFilter);
+                }
+                Value SRGBColorSpace = threeJS.getMember("SRGBColorSpace");
+                if (SRGBColorSpace != null) tex.putMember("colorSpace", SRGBColorSpace);
+                tex.putMember("needsUpdate", true);
+                material.putMember("map", tex);
+                System.out.println("DEBUG: Base color texture applied with clamp wrapping");
+            } else {
+                System.out.println("DEBUG: Failed to load texture: " + resolved);
+            }
+        }
+
+        // Re-enable all PBR texture maps with corrected UV coordinates
+        System.out.println("DEBUG: Re-enabling all PBR texture maps");
+        
+        // Normal map
+        String normalFile = queryTex.apply(aiTextureType_NORMALS);
+        if (normalFile == null) normalFile = queryTex.apply(aiTextureType_HEIGHT); // sometimes used
+        if (normalFile != null) {
+            String resolved = resolveTextureRelativeToAssets(normalFile);
+            Value tex = textureLoader.loadTexture(resolved);
+            if (tex != null) {
+                applyPBRTextureSettings(tex, false); // Linear color space for normal maps
+                material.putMember("normalMap", tex);
+                System.out.println("DEBUG: Normal map applied: " + normalFile);
+            }
+        }
+
+        // Metalness & Roughness (glTF packs in one texture). Try METALNESS, then DIFFUSE_ROUGHNESS, then SPECULAR
+        String mrFile = queryTex.apply(aiTextureType_METALNESS);
+        if (mrFile == null) mrFile = queryTex.apply(aiTextureType_DIFFUSE_ROUGHNESS);
+        if (mrFile == null) mrFile = queryTex.apply(aiTextureType_UNKNOWN); // some importers tag as UNKNOWN
+        if (mrFile != null) {
+            String resolved = resolveTextureRelativeToAssets(mrFile);
+            Value tex = textureLoader.loadTexture(resolved);
+            if (tex != null) {
+                applyPBRTextureSettings(tex, false); // Linear color space for metallic/roughness
+                material.putMember("metalnessMap", tex);
+                material.putMember("roughnessMap", tex);
+                System.out.println("DEBUG: Metallic/Roughness map applied: " + mrFile);
+            }
+        }
+
+        // Ambient Occlusion
+        String aoFile = queryTex.apply(aiTextureType_AMBIENT_OCCLUSION);
+        if (aoFile == null) aoFile = queryTex.apply(aiTextureType_LIGHTMAP);
+        if (aoFile != null) {
+            String resolved = resolveTextureRelativeToAssets(aoFile);
+            Value tex = textureLoader.loadTexture(resolved);
+            if (tex != null) {
+                applyPBRTextureSettings(tex, false); // Linear color space for AO
+                material.putMember("aoMap", tex);
+                System.out.println("DEBUG: AO map applied: " + aoFile);
+            }
+        }
+
+        // Emissive
+        String emissiveFile = queryTex.apply(aiTextureType_EMISSIVE);
+        if (emissiveFile != null) {
+            String resolved = resolveTextureRelativeToAssets(emissiveFile);
+            Value tex = textureLoader.loadTexture(resolved);
+            if (tex != null) {
+                applyPBRTextureSettings(tex, true); // sRGB color space for emissive
+                material.putMember("emissiveMap", tex);
+                System.out.println("DEBUG: Emissive map applied: " + emissiveFile);
+            }
+        }
+    }
+
+    // Apply consistent PBR texture settings (same as base color texture)
+    private void applyPBRTextureSettings(Value tex, boolean sRGB) {
+        if (tex == null) return;
+        
+        // Same settings as base color texture for consistency
+        Value ClampToEdgeWrapping = threeJS.getMember("ClampToEdgeWrapping");
+        if (ClampToEdgeWrapping != null) {
+            tex.putMember("wrapS", ClampToEdgeWrapping);
+            tex.putMember("wrapT", ClampToEdgeWrapping);
+        }
+        tex.putMember("flipY", false); // GLTF standard
+        tex.putMember("generateMipmaps", false); // Keep consistent with base color
+        Value LinearFilter = threeJS.getMember("LinearFilter");
+        if (LinearFilter != null) {
+            tex.putMember("minFilter", LinearFilter);
+            tex.putMember("magFilter", LinearFilter);
+        }
+        
+        // Color space
+        if (sRGB) {
+            Value SRGBColorSpace = threeJS.getMember("SRGBColorSpace");
+            if (SRGBColorSpace != null) tex.putMember("colorSpace", SRGBColorSpace);
+        } else {
+            Value LinearSRGBColorSpace = threeJS.getMember("LinearSRGBColorSpace");
+            if (LinearSRGBColorSpace != null) tex.putMember("colorSpace", LinearSRGBColorSpace);
+        }
+        
+        tex.putMember("needsUpdate", true);
+    }
+
+    // Configure wrapping, color space, and mipmap filtering for a texture
+    private void configureTextureColor(Value tex, boolean sRGB, boolean mipmaps) {
+        if (tex == null) return;
+        // Wrapping: clamp to avoid streaks if UV slightly out of [0,1]
+        Value ClampToEdgeWrapping = threeJS.getMember("ClampToEdgeWrapping");
+        if (ClampToEdgeWrapping != null) {
+            tex.putMember("wrapS", ClampToEdgeWrapping);
+            tex.putMember("wrapT", ClampToEdgeWrapping);
+        }
+        // For GLTF convention, use unflipped textures (flipY=false). We also removed aiProcess_FlipUVs.
+        tex.putMember("flipY", false);
+        // Reset transform to defaults
+        Value Vector2 = threeJS.getMember("Vector2");
+        if (Vector2 != null) {
+            Value oneOne = Vector2.newInstance(1.0, 1.0);
+            Value zeroZero = Vector2.newInstance(0.0, 0.0);
+            tex.putMember("repeat", oneOne);
+            tex.putMember("offset", zeroZero);
+            tex.putMember("center", zeroZero);
+        }
+        // Color space
+        if (sRGB) {
+            Value SRGB = threeJS.getMember("SRGBColorSpace");
+            if (SRGB != null) tex.putMember("colorSpace", SRGB);
+        } else {
+            Value Linear = threeJS.getMember("LinearSRGBColorSpace");
+            if (Linear != null) tex.putMember("colorSpace", Linear);
+        }
+        // Filters and mipmaps
+        Value LinearFilter = threeJS.getMember("LinearFilter");
+        Value LinearMipmapLinearFilter = threeJS.getMember("LinearMipmapLinearFilter");
+        if (mipmaps && LinearMipmapLinearFilter != null) {
+            tex.putMember("generateMipmaps", true);
+            tex.putMember("minFilter", LinearMipmapLinearFilter);
+        } else if (LinearFilter != null) {
+            tex.putMember("generateMipmaps", false);
+            tex.putMember("minFilter", LinearFilter);
+        }
+        if (LinearFilter != null) tex.putMember("magFilter", LinearFilter);
+        tex.putMember("needsUpdate", true);
+    }
+
+    private String resolveTextureRelativeToAssets(String textureFile) {
+        if (textureFile == null || textureFile.isEmpty()) return textureFile;
+        String tf = textureFile.replace('\\', '/');
+        // If the path already starts with assets/, strip it so TextureLoader treats it as relative to assets/
+        if (tf.startsWith("assets/")) {
+            return tf.substring("assets/".length());
+        }
+        // If it's already relative (contains directories), join with model base dir if not already rooted
+        if (tf.startsWith("/")) {
+            // Remove leading slash and treat as relative to assets
+            tf = tf.substring(1);
+        }
+        if (modelBaseDir == null || modelBaseDir.isEmpty()) {
+            return tf; // use as-is relative to assets/
+        }
+        // Join base dir with texture filename
+        if (tf.contains("/")) {
+            // If tf already has directories, assume it's correct relative to base or assets
+            return modelBaseDir + "/" + tf;
+        } else {
+            return modelBaseDir + "/" + tf;
+        }
     }
 }
