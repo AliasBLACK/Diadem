@@ -70,6 +70,7 @@ globalThis.canvas = new (class HTMLCanvasElement {
 // AbortSignal class
 globalThis.AbortSignal = class AbortSignal {};
 globalThis.AbortController = class AbortController {};
+globalThis.VideoFrame = class VideoFrame {};
 
 // Animation frame handling for Three.js
 var currentAnimationFrameId = 0;
