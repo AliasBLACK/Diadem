@@ -1672,6 +1672,18 @@ globalThis.gl = {
 					drawElementsInstancedANGLE: (mode, count, type, offset, primcount) => 
 						webgl2Bridge.drawElementsInstanced(mode, count, type, offset, primcount)
 				};
+			case 'EXT_color_buffer_float':
+				return {}; // Renderable float color buffers
+			case 'EXT_color_buffer_half_float':
+				return {}; // Renderable half-float color buffers
+			case 'OES_texture_float_linear':
+				return {}; // Linear filtering for float textures
+			case 'OES_texture_half_float_linear':
+				return {};
+			case 'OES_texture_float':
+				return {};
+			case 'OES_texture_half_float':
+				return {};
 			default:
 				return null; // Extension not supported
 		}

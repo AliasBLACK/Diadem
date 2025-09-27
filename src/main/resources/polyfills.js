@@ -1,3 +1,51 @@
+// Robust WeakMap shim installed early (force override)
+// Three.js PMREM uses WeakMap heavily; GraalVM bridges may pass non-plain objects.
+// This shim tolerates primitives/null by boxing to hidden objects.
+globalThis.WeakMap = class WeakMap {
+    constructor() {
+        this._k = '__wm_' + Math.random().toString(36).slice(2);
+        this._fk = []; // fallback keys
+        this._fv = []; // fallback values
+        this._boxes = Object.create(null);
+        this._null = { __wm_null__: true };
+    }
+    _box(k) {
+        if (k === null || k === undefined) return this._null;
+        const t = typeof k;
+        if (t === 'object' || t === 'function') return k;
+        const id = t + ':' + String(k);
+        return this._boxes[id] || (this._boxes[id] = { __boxed__: true, t, v: k });
+    }
+    set(k, v) {
+        k = this._box(k);
+        try {
+            Object.defineProperty(k, this._k, { value: v, writable: true, enumerable: false, configurable: true });
+            return this;
+        } catch (_) {}
+        const i = this._fk.indexOf(k);
+        if (i >= 0) this._fv[i] = v; else { this._fk.push(k); this._fv.push(v); }
+        return this;
+    }
+    get(k) {
+        k = this._box(k);
+        if (this._k in k) return k[this._k];
+        const i = this._fk.indexOf(k);
+        return i >= 0 ? this._fv[i] : undefined;
+    }
+    has(k) {
+        k = this._box(k);
+        return (this._k in k) || this._fk.indexOf(k) >= 0;
+    }
+    delete(k) {
+        k = this._box(k);
+        let d = false;
+        if (this._k in k) { delete k[this._k]; d = true; }
+        const i = this._fk.indexOf(k);
+        if (i >= 0) { this._fk.splice(i,1); this._fv.splice(i,1); d = true; }
+        return d;
+    }
+};
+
 // Essential browser APIs for Three.js with LWJGL Assimp GLTF Loader
 globalThis.window = globalThis;
 globalThis.self = globalThis;
