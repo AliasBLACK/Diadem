@@ -127,12 +127,14 @@ public class ModelLoader {
 		
 		// Extract vertices
 		AIVector3D.Buffer vertices = mesh.mVertices();
-		float[] vertexArray = new float[mesh.mNumVertices() * 3];
-		for (int i = 0; i < mesh.mNumVertices(); i++) {
+		int numVertices = mesh.mNumVertices();
+		float[] vertexArray = new float[numVertices * 3];
+		for (int i = 0; i < numVertices; i++) {
 			AIVector3D vertex = vertices.get(i);
-			vertexArray[i * 3] = vertex.x();
-			vertexArray[i * 3 + 1] = vertex.y();
-			vertexArray[i * 3 + 2] = vertex.z();
+			int baseIndex = i * 3;
+			vertexArray[baseIndex] = vertex.x();
+			vertexArray[baseIndex + 1] = vertex.y();
+			vertexArray[baseIndex + 2] = vertex.z();
 		}
 		
 		// Create Three.js Float32BufferAttribute for positions
@@ -143,12 +145,13 @@ public class ModelLoader {
 		// Extract normals if available
 		AIVector3D.Buffer normals = mesh.mNormals();
 		if (normals != null) {
-			float[] normalArray = new float[mesh.mNumVertices() * 3];
-			for (int i = 0; i < mesh.mNumVertices(); i++) {
+			float[] normalArray = new float[numVertices * 3];
+			for (int i = 0; i < numVertices; i++) {
 				AIVector3D normal = normals.get(i);
-				normalArray[i * 3] = normal.x();
-				normalArray[i * 3 + 1] = normal.y();
-				normalArray[i * 3 + 2] = normal.z();
+				int baseIndex = i * 3;
+				normalArray[baseIndex] = normal.x();
+				normalArray[baseIndex + 1] = normal.y();
+				normalArray[baseIndex + 2] = normal.z();
 			}
 			Value normalAttribute = Float32BufferAttribute.newInstance(normalArray, 3);
 			geometry.invokeMember("setAttribute", "normal", normalAttribute);
@@ -158,12 +161,13 @@ public class ModelLoader {
 		boolean hasVertexColors = false;
 		AIColor4D.Buffer colors = mesh.mColors(0);
 		if (colors != null) {
-			float[] colorArray = new float[mesh.mNumVertices() * 3];
-			for (int i = 0; i < mesh.mNumVertices(); i++) {
+			float[] colorArray = new float[numVertices * 3];
+			for (int i = 0; i < numVertices; i++) {
 				AIColor4D c = colors.get(i);
-				colorArray[i * 3] = c.r();
-				colorArray[i * 3 + 1] = c.g();
-				colorArray[i * 3 + 2] = c.b();
+				int baseIndex = i * 3;
+				colorArray[baseIndex] = c.r();
+				colorArray[baseIndex + 1] = c.g();
+				colorArray[baseIndex + 2] = c.b();
 			}
 			Value colorAttribute = Float32BufferAttribute.newInstance(colorArray, 3);
 			geometry.invokeMember("setAttribute", "color", colorAttribute);
@@ -174,9 +178,9 @@ public class ModelLoader {
 		AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
 		Value uvAttribute = null;
 		if (texCoords != null) {
-			float[] uvArray = new float[mesh.mNumVertices() * 2];
+			float[] uvArray = new float[numVertices * 2];
 			
-			for (int i = 0; i < mesh.mNumVertices(); i++) {
+			for (int i = 0; i < numVertices; i++) {
 				AIVector3D texCoord = texCoords.get(i);
 				float u = texCoord.x();
 				float v = texCoord.y();
@@ -186,8 +190,9 @@ public class ModelLoader {
 					v = v - 1.0f;
 				}
 				
-				uvArray[i * 2] = u;
-				uvArray[i * 2 + 1] = v;
+				int baseIndex = i * 2;
+				uvArray[baseIndex] = u;
+				uvArray[baseIndex + 1] = v;
 			}
 			
 			uvAttribute = Float32BufferAttribute.newInstance(uvArray, 2);
