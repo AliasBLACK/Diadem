@@ -1,387 +1,387 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <groupId>black.alias</groupId>
-  <artifactId>diadem</artifactId>
-  <version>1.0-SNAPSHOT</version>
+	<groupId>black.alias</groupId>
+	<artifactId>diadem</artifactId>
+	<version>1.0-SNAPSHOT</version>
 
-  <name>diadem</name>
-  <url>http://alias.black/</url>
+	<name>diadem</name>
+	<url>http://alias.black/</url>
 
-  <properties>
-	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	<maven.compiler.release>24</maven.compiler.release>
-	<lwjgl.version>3.3.6</lwjgl.version>
-	<lwjgl.natives>natives-windows</lwjgl.natives>
-	<graaljs.version>24.2.2</graaljs.version>
-  </properties>
-
-  <profiles>
-	<!-- Windows x64 -->
-	<profile>
-	  <id>windows-x64</id>
-	  <activation>
-		<os>
-		  <family>windows</family>
-		  <arch>amd64</arch>
-		</os>
-	  </activation>
-	  <properties>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>24</maven.compiler.release>
+		<lwjgl.version>3.3.6</lwjgl.version>
 		<lwjgl.natives>natives-windows</lwjgl.natives>
-	  </properties>
-	</profile>
-	
-	<!-- Windows ARM64 -->
-	<profile>
-	  <id>windows-arm64</id>
-	  <activation>
-		<os>
-		  <family>windows</family>
-		  <arch>aarch64</arch>
-		</os>
-	  </activation>
-	  <properties>
-		<lwjgl.natives>natives-windows-arm64</lwjgl.natives>
-	  </properties>
-	</profile>
-	
-	<!-- macOS x64 -->
-	<profile>
-	  <id>macos-x64</id>
-	  <activation>
-		<os>
-		  <family>mac</family>
-		  <arch>x86_64</arch>
-		</os>
-	  </activation>
-	  <properties>
-		<lwjgl.natives>natives-macos</lwjgl.natives>
-	  </properties>
-	</profile>
-	
-	<!-- macOS ARM64 (Apple Silicon) -->
-	<profile>
-	  <id>macos-arm64</id>
-	  <activation>
-		<os>
-		  <family>mac</family>
-		  <arch>aarch64</arch>
-		</os>
-	  </activation>
-	  <properties>
-		<lwjgl.natives>natives-macos-arm64</lwjgl.natives>
-	  </properties>
-	</profile>
-	
-	<!-- Linux x64 -->
-	<profile>
-	  <id>linux-x64</id>
-	  <activation>
-		<os>
-		  <family>unix</family>
-		  <name>Linux</name>
-		  <arch>amd64</arch>
-		</os>
-	  </activation>
-	  <properties>
-		<lwjgl.natives>natives-linux</lwjgl.natives>
-	  </properties>
-	</profile>
-	
-	<!-- Linux ARM64 -->
-	<profile>
-	  <id>linux-arm64</id>
-	  <activation>
-		<os>
-		  <family>unix</family>
-		  <name>Linux</name>
-		  <arch>aarch64</arch>
-		</os>
-	  </activation>
-	  <properties>
-		<lwjgl.natives>natives-linux-arm64</lwjgl.natives>
-	  </properties>
-	</profile>
-  </profiles>
+		<graaljs.version>24.2.2</graaljs.version>
+	</properties>
 
-  <dependencyManagement>
+	<profiles>
+		<!-- Windows x64 -->
+		<profile>
+			<id>windows-x64</id>
+			<activation>
+				<os>
+					<family>windows</family>
+					<arch>amd64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-windows</lwjgl.natives>
+			</properties>
+		</profile>
+		
+		<!-- Windows ARM64 -->
+		<profile>
+			<id>windows-arm64</id>
+			<activation>
+				<os>
+					<family>windows</family>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-windows-arm64</lwjgl.natives>
+			</properties>
+		</profile>
+		
+		<!-- macOS x64 -->
+		<profile>
+			<id>macos-x64</id>
+			<activation>
+				<os>
+					<family>mac</family>
+					<arch>x86_64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-macos</lwjgl.natives>
+			</properties>
+		</profile>
+		
+		<!-- macOS ARM64 (Apple Silicon) -->
+		<profile>
+			<id>macos-arm64</id>
+			<activation>
+				<os>
+					<family>mac</family>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-macos-arm64</lwjgl.natives>
+			</properties>
+		</profile>
+		
+		<!-- Linux x64 -->
+		<profile>
+			<id>linux-x64</id>
+			<activation>
+				<os>
+					<family>unix</family>
+					<name>Linux</name>
+					<arch>amd64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-linux</lwjgl.natives>
+			</properties>
+		</profile>
+		
+		<!-- Linux ARM64 -->
+		<profile>
+			<id>linux-arm64</id>
+			<activation>
+				<os>
+					<family>unix</family>
+					<name>Linux</name>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<lwjgl.natives>natives-linux-arm64</lwjgl.natives>
+			</properties>
+		</profile>
+	</profiles>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.lwjgl</groupId>
+				<artifactId>lwjgl-bom</artifactId>
+				<version>${lwjgl.version}</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
-	  <dependency>
-		<groupId>org.lwjgl</groupId>
-		<artifactId>lwjgl-bom</artifactId>
-		<version>${lwjgl.version}</version>
-		<scope>import</scope>
-		<type>pom</type>
-	  </dependency>
+		<dependency>
+			<groupId>org.graalvm.polyglot</groupId>
+			<artifactId>polyglot</artifactId>
+			<version>${graaljs.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.graalvm.polyglot</groupId>
+			<artifactId>js-community</artifactId>
+			<version>${graaljs.version}</version>
+			<type>pom</type>
+		</dependency>
+		
+		<!-- LWJGL Core -->
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-opengl</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-assimp</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjglx</groupId>
+			<artifactId>lwjgl3-awt</artifactId>
+			<version>0.2.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-stb</artifactId>
+		</dependency>
+		
+		<!-- LWJGL Natives -->
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+			<classifier>${lwjgl.natives}</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-opengl</artifactId>
+			<classifier>${lwjgl.natives}</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-assimp</artifactId>
+			<classifier>${lwjgl.natives}</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-stb</artifactId>
+			<classifier>${lwjgl.natives}</classifier>
+		</dependency>
 	</dependencies>
-  </dependencyManagement>
 
-  <dependencies>
-	<dependency>
-	  <groupId>org.graalvm.polyglot</groupId>
-	  <artifactId>polyglot</artifactId>
-	  <version>${graaljs.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.graalvm.polyglot</groupId>
-	  <artifactId>js-community</artifactId>
-	  <version>${graaljs.version}</version>
-	  <type>pom</type>
-	</dependency>
-	
-	<!-- LWJGL Core -->
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl</artifactId>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-opengl</artifactId>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-assimp</artifactId>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjglx</groupId>
-	  <artifactId>lwjgl3-awt</artifactId>
-	  <version>0.2.3</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-stb</artifactId>
-	</dependency>
-	
-	<!-- LWJGL Natives -->
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl</artifactId>
-	  <classifier>${lwjgl.natives}</classifier>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-opengl</artifactId>
-	  <classifier>${lwjgl.natives}</classifier>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-assimp</artifactId>
-	  <classifier>${lwjgl.natives}</classifier>
-	</dependency>
-	<dependency>
-	  <groupId>org.lwjgl</groupId>
-	  <artifactId>lwjgl-stb</artifactId>
-	  <classifier>${lwjgl.natives}</classifier>
-	</dependency>
-  </dependencies>
-
-  <build>
-	<pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
-	  <plugins>
-		<plugin>
-		  <groupId>com.github.akman</groupId>
-		  <artifactId>jpackage-maven-plugin</artifactId>
-		  <version>0.1.5</version>
-		  <configuration>
-			<name>Diadem</name>
-			<appversion>1.0.0</appversion>
-			<vendor>Diadem</vendor>
-			<dest>target/dist</dest>
-			<input>target</input>
-			<mainjar>diadem-1.0-SNAPSHOT.jar</mainjar>
-			<mainclass>black.alias.diadem.JSInit</mainclass>
-			<type>IMAGE</type>
-			<javaoptions>-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED</javaoptions>
-			<addmodules>
-			  <addmodule>java.base</addmodule>
-			  <addmodule>java.desktop</addmodule>
-			  <addmodule>java.logging</addmodule>
-			  <addmodule>java.management</addmodule>
-			  <addmodule>jdk.unsupported</addmodule>
-			</addmodules>
-			<bindservices>false</bindservices>
-			<stripdebug>true</stripdebug>
-			<compress>2</compress>
-			<noheaderfiles>true</noheaderfiles>
-			<nomanpages>true</nomanpages>
-			<stripnativecommands>true</stripnativecommands>
-			<winconsole>false</winconsole>
-			<macconsole>false</macconsole>
-			<linuxconsole>false</linuxconsole>
-		  </configuration>
-		</plugin>
-		<!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
-		<plugin>
-		  <artifactId>maven-clean-plugin</artifactId>
-		  <version>3.4.0</version>
-		</plugin>
-		<!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
-		<plugin>
-		  <artifactId>maven-resources-plugin</artifactId>
-		  <version>3.3.1</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-compiler-plugin</artifactId>
-		  <version>3.13.0</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-surefire-plugin</artifactId>
-		  <version>3.3.0</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-jar-plugin</artifactId>
-		  <version>3.4.2</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-install-plugin</artifactId>
-		  <version>3.1.2</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-deploy-plugin</artifactId>
-		  <version>3.1.2</version>
-		</plugin>
-		<!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
-		<plugin>
-		  <artifactId>maven-site-plugin</artifactId>
-		  <version>3.12.1</version>
-		</plugin>
-		<plugin>
-		  <artifactId>maven-project-info-reports-plugin</artifactId>
-		  <version>3.6.1</version>
-		</plugin>
-	  </plugins>
-	</pluginManagement>
-	
-	<plugins>
-	  <plugin>
-		<groupId>org.codehaus.mojo</groupId>
-		<artifactId>exec-maven-plugin</artifactId>
-		<version>3.1.0</version>
-		<configuration>
-		  <mainClass>black.alias.diadem.JSInit</mainClass>
-		  <includePluginDependencies>true</includePluginDependencies>
-		</configuration>
-	  </plugin>
-	  
-	  <!-- Maven Shade Plugin for Fat JAR -->
-	  <plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-shade-plugin</artifactId>
-		<version>3.4.1</version>
-		<executions>
-		  <execution>
-			<phase>package</phase>
-			<goals>
-			  <goal>shade</goal>
-			</goals>
-			<configuration>
-			  <createDependencyReducedPom>false</createDependencyReducedPom>
-			  <transformers>
-				<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-				  <mainClass>black.alias.diadem.JSInit</mainClass>
-				</transformer>
-				<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-			  </transformers>
-			  <filters>
-				<filter>
-				  <artifact>*:*</artifact>
-				  <excludes>
-					<exclude>META-INF/*.SF</exclude>
-					<exclude>META-INF/*.DSA</exclude>
-					<exclude>META-INF/*.RSA</exclude>
-				  </excludes>
-				</filter>
-			  </filters>
-			</configuration>
-		  </execution>
-		</executions>
-	  </plugin>
-	  
-	  <!-- Copy scripts and assets from project root to resources during compile -->
-	  <plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-resources-plugin</artifactId>
-		<version>3.3.1</version>
-		<executions>
-		  <execution>
-			<id>copy-scripts-to-resources</id>
-			<phase>generate-resources</phase>
-			<goals>
-			  <goal>copy-resources</goal>
-			</goals>
-			<configuration>
-			  <outputDirectory>${project.build.directory}/classes/scripts</outputDirectory>
-			  <resources>
-				<resource>
-				  <directory>scripts</directory>
-				  <filtering>false</filtering>
-				</resource>
-			  </resources>
-			</configuration>
-		  </execution>
-		  <execution>
-			<id>copy-assets-to-resources</id>
-			<phase>generate-resources</phase>
-			<goals>
-			  <goal>copy-resources</goal>
-			</goals>
-			<configuration>
-			  <outputDirectory>${project.build.directory}/classes/assets</outputDirectory>
-			  <resources>
-				<resource>
-				  <directory>assets</directory>
-				  <filtering>false</filtering>
-				</resource>
-			  </resources>
-			</configuration>
-		  </execution>
-		</executions>
-	  </plugin>
-	  
-	  <!-- Clean up target folder for jpackage -->
-	  <plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-antrun-plugin</artifactId>
-		<version>3.1.0</version>
-		<executions>
-		  <execution>
-			<id>cleanup-for-jpackage</id>
-			<phase>pre-integration-test</phase>
-			<goals>
-			  <goal>run</goal>
-			</goals>
-			<configuration>
-			  <target>
-				<delete dir="${project.build.directory}/classes" quiet="true"/>
-				<delete dir="${project.build.directory}/generated-sources" quiet="true"/>
-				<delete dir="${project.build.directory}/maven-archiver" quiet="true"/>
-				<delete dir="${project.build.directory}/maven-status" quiet="true"/>
-				<delete dir="${project.build.directory}/test-classes" quiet="true"/>
-				<delete dir="${project.build.directory}/surefire-reports" quiet="true"/>
-				<delete dir="${project.build.directory}/antrun" quiet="true"/>
-				<delete file="${project.build.directory}/original-diadem-1.0-SNAPSHOT.jar" quiet="true"/>
-			  </target>
-			</configuration>
-		  </execution>
-		</executions>
-	  </plugin>
-	  
-	  <!-- JPackage Maven Plugin -->
-	  <plugin>
-		<groupId>com.github.akman</groupId>
-		<artifactId>jpackage-maven-plugin</artifactId>
-		<executions>
-		  <execution>
-			<id>jpackage</id>
-			<phase>verify</phase>
-			<goals>
-			  <goal>jpackage</goal>
-			</goals>
-		  </execution>
-		</executions>
-	  </plugin>
-	</plugins>
-  </build>
+	<build>
+		<pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+			<plugins>
+				<plugin>
+					<groupId>com.github.akman</groupId>
+					<artifactId>jpackage-maven-plugin</artifactId>
+					<version>0.1.5</version>
+					<configuration>
+						<name>Diadem</name>
+						<appversion>1.0.0</appversion>
+						<vendor>Diadem</vendor>
+						<dest>target/dist</dest>
+						<input>target</input>
+						<mainjar>diadem-1.0-SNAPSHOT.jar</mainjar>
+						<mainclass>black.alias.diadem.JSInit</mainclass>
+						<type>IMAGE</type>
+						<javaoptions>-Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED</javaoptions>
+						<addmodules>
+							<addmodule>java.base</addmodule>
+							<addmodule>java.desktop</addmodule>
+							<addmodule>java.logging</addmodule>
+							<addmodule>java.management</addmodule>
+							<addmodule>jdk.unsupported</addmodule>
+						</addmodules>
+						<bindservices>false</bindservices>
+						<stripdebug>true</stripdebug>
+						<compress>2</compress>
+						<noheaderfiles>true</noheaderfiles>
+						<nomanpages>true</nomanpages>
+						<stripnativecommands>true</stripnativecommands>
+						<winconsole>false</winconsole>
+						<macconsole>false</macconsole>
+						<linuxconsole>false</linuxconsole>
+					</configuration>
+				</plugin>
+				<!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
+				<plugin>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>3.4.0</version>
+				</plugin>
+				<!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+				<plugin>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.3.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.13.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.3.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.4.2</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>3.1.2</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>3.1.2</version>
+				</plugin>
+				<!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
+				<plugin>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>3.12.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-project-info-reports-plugin</artifactId>
+					<version>3.6.1</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<mainClass>black.alias.diadem.JSInit</mainClass>
+					<includePluginDependencies>true</includePluginDependencies>
+				</configuration>
+			</plugin>
+			
+			<!-- Maven Shade Plugin for Fat JAR -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.4.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>black.alias.diadem.JSInit</mainClass>
+								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+							</transformers>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!-- Copy scripts and assets from project root to resources during compile -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copy-scripts-to-resources</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/classes/scripts</outputDirectory>
+							<resources>
+								<resource>
+									<directory>scripts</directory>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-assets-to-resources</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/classes/assets</outputDirectory>
+							<resources>
+								<resource>
+									<directory>assets</directory>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!-- Clean up target folder for jpackage -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>cleanup-for-jpackage</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<delete dir="${project.build.directory}/classes" quiet="true"/>
+								<delete dir="${project.build.directory}/generated-sources" quiet="true"/>
+								<delete dir="${project.build.directory}/maven-archiver" quiet="true"/>
+								<delete dir="${project.build.directory}/maven-status" quiet="true"/>
+								<delete dir="${project.build.directory}/test-classes" quiet="true"/>
+								<delete dir="${project.build.directory}/surefire-reports" quiet="true"/>
+								<delete dir="${project.build.directory}/antrun" quiet="true"/>
+								<delete file="${project.build.directory}/original-diadem-1.0-SNAPSHOT.jar" quiet="true"/>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!-- JPackage Maven Plugin -->
+			<plugin>
+				<groupId>com.github.akman</groupId>
+				<artifactId>jpackage-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>jpackage</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>jpackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
