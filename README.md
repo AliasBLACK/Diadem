@@ -45,10 +45,10 @@ camera.position.z = 3;
 
 // Animation loop using requestAnimationFrame
 function animate() {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    
-    renderer.render(scene, camera);
+	cube.rotation.x += 0.01;
+	cube.rotation.y += 0.01;
+	
+	renderer.render(scene, camera);
 }
 
 requestAnimationFrame(animate);
@@ -59,16 +59,16 @@ requestAnimationFrame(animate);
 ```
 src/main/
 ├── java/black/alias/diadem/
-│   ├── JSInit.java                # Main application launcher
-│   ├── JSContext.java             # JavaScript execution context
-│   ├── Math/                      # Matrix and vector math utilities
-│   └── Utils/                     # OpenGL adapters and buffer utilities
+│   ├── JSInit.java				# Main application launcher
+│   ├── JSContext.java			 # JavaScript execution context
+│   ├── Math/					  # Matrix and vector math utilities
+│   └── Utils/					 # OpenGL adapters and buffer utilities
 ├── lib/
-│   ├── three.cjs                  # Three.js CommonJS build
-│   ├── renderer.js                # WebGL2 to LWJGL bridge
-│   └── polyfills.js               # Browser API polyfills
+│   ├── three.cjs				  # Three.js CommonJS build
+│   ├── renderer.js				# WebGL2 to LWJGL bridge
+│   └── polyfills.js			   # Browser API polyfills
 └── src/
-    └── main.js                    # Client application entry point
+	└── main.js					# Client application entry point
 ```
 
 ## Building and Running

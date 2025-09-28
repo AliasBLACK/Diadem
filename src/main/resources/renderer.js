@@ -369,7 +369,7 @@ globalThis.gl = {
 							const g = imageData[(dataIndex + 1) % imageData.length];
 							const b = imageData[(dataIndex + 2) % imageData.length];
 							
-							textureData[pixelIndex] = r;     // R
+							textureData[pixelIndex] = r;	 // R
 							textureData[pixelIndex + 1] = g; // G
 							textureData[pixelIndex + 2] = b; // B
 							textureData[pixelIndex + 3] = 255; // A (fully opaque)
@@ -531,7 +531,7 @@ globalThis.gl = {
 					for (let i = 0; i < textureData.length; i++) {
 						let v = textureData[i];
 						if (v > 127) v -= 256; // signed conversion
-						javaBytes[i] = v;      // Graal will store as Java byte
+						javaBytes[i] = v;	  // Graal will store as Java byte
 					}
 				
 					// Create a direct ByteBuffer and bulk-copy the Java byte[]
@@ -636,7 +636,7 @@ globalThis.gl = {
 				for (let i = 0; i < pixels.length; i++) {
 					let v = pixels[i];
 					if (v > 127) v -= 256; // signed conversion
-					javaBytes[i] = v;      // Graal will store as Java byte
+					javaBytes[i] = v;	  // Graal will store as Java byte
 				}
 			
 				// Create a direct ByteBuffer and bulk-copy the Java byte[]
