@@ -2,36 +2,27 @@ package black.alias.diadem.Loaders;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.Context;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.stb.STBImage;
+import org.lwjgl.BufferUtils;
 
 /**
  * Dedicated texture loading utility for creating Three.js DataTextures from image files
- * Supports both resource-based loading (compiled mode) and filesystem loading (development mode)
+ * Loads exclusively from classpath resources under /assets/
  */
 public class TextureLoader {
 	private final Context jsContext;
 	private final Value threeJS;
-	private final Path fallbackAssetsDirectory;
-	private final boolean useResources;
 	
 	public TextureLoader(Context jsContext, Value threeJS) {
 		this.jsContext = jsContext;
 		this.threeJS = threeJS;
-		this.fallbackAssetsDirectory = Paths.get("assets");
-		
-		// Check if we can load assets from resources (compiled/packaged mode)
-		this.useResources = getClass().getResourceAsStream("/assets/test-module.js") != null;
 	}
 	
 	/**
@@ -107,15 +98,9 @@ public class TextureLoader {
 
 	private ByteBuffer readFileToByteBuffer(String texturePath) throws IOException {
 		byte[] bytes;
-		if (useResources) {
-			try (InputStream is = getClass().getResourceAsStream("/assets/" + texturePath)) {
-				if (is == null) return null;
-				bytes = is.readAllBytes();
-			}
-		} else {
-			Path imagePath = fallbackAssetsDirectory.resolve(texturePath);
-			if (!Files.exists(imagePath)) return null;
-			bytes = Files.readAllBytes(imagePath);
+		try (InputStream is = getClass().getResourceAsStream("/assets/" + texturePath)) {
+			if (is == null) return null;
+			bytes = is.readAllBytes();
 		}
 		ByteBuffer buf = BufferUtils.createByteBuffer(bytes.length);
 		buf.put(bytes);
@@ -242,21 +227,12 @@ public class TextureLoader {
 	 */
 	private BufferedImage loadImageFromPath(String texturePath) throws IOException {
 		BufferedImage bufferedImage;
-		
-		if (useResources) {
-			try (InputStream is = getClass().getResourceAsStream("/assets/" + texturePath)) {
-				if (is == null) {
-					return null;
-				}
-				bufferedImage = ImageIO.read(is);
-			}
-		} else {
-			Path imagePath = fallbackAssetsDirectory.resolve(texturePath);
-			if (!Files.exists(imagePath)) {
+		try (InputStream is = getClass().getResourceAsStream("/assets/" + texturePath)) {
+			if (is == null) {
 				return null;
 			}
-			bufferedImage = ImageIO.read(imagePath.toFile());
-		}	  
+			bufferedImage = ImageIO.read(is);
+		}
 		return bufferedImage;
 	}
 	
@@ -330,17 +306,13 @@ public class TextureLoader {
 	 * Check if texture exists at the given path
 	 */
 	public boolean textureExists(String texturePath) {
-		if (useResources) {
-			return getClass().getResourceAsStream("/assets/" + texturePath) != null;
-		} else {
-			return Files.exists(fallbackAssetsDirectory.resolve(texturePath));
-		}
+		return getClass().getResourceAsStream("/assets/" + texturePath) != null;
 	}
 	
 	/**
 	 * Get texture loading mode (resources vs filesystem)
 	 */
 	public boolean isUsingResources() {
-		return useResources;
+		return true;
 	}
 }
