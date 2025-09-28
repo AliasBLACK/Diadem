@@ -153,6 +153,22 @@ public class ModelLoader {
 			Value normalAttribute = Float32BufferAttribute.newInstance(normalArray, 3);
 			geometry.invokeMember("setAttribute", "normal", normalAttribute);
 		}
+
+		// Extract vertex colors if available (color set 0)
+		boolean hasVertexColors = false;
+		AIColor4D.Buffer colors = mesh.mColors(0);
+		if (colors != null) {
+			float[] colorArray = new float[mesh.mNumVertices() * 3];
+			for (int i = 0; i < mesh.mNumVertices(); i++) {
+				AIColor4D c = colors.get(i);
+				colorArray[i * 3] = c.r();
+				colorArray[i * 3 + 1] = c.g();
+				colorArray[i * 3 + 2] = c.b();
+			}
+			Value colorAttribute = Float32BufferAttribute.newInstance(colorArray, 3);
+			geometry.invokeMember("setAttribute", "color", colorAttribute);
+			hasVertexColors = true;
+		}
 		
 		// Extract UV coordinates if available
 		AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
@@ -202,6 +218,9 @@ public class ModelLoader {
 		Value material = MeshPhysicalMaterial.newInstance();
 		material.putMember("metalness", 0.2);
 		material.putMember("roughness", 0.6);
+		if (hasVertexColors) {
+			material.putMember("vertexColors", true);
+		}
 		assignPBRTextures(material, mesh, scene);
 		
 		// Create mesh
