@@ -1,5 +1,4 @@
 package black.alias.diadem.Loaders;
-
 import org.lwjgl.assimp.*;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.Context;
@@ -9,10 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.assimp.Assimp.*;
-
-/**
- * Custom GLTF loader using LWJGL Assimp that creates Three.js compatible objects
- */
 public class GLTFLoader {
 	
 	private final Context jsContext;
@@ -29,15 +24,9 @@ public class GLTFLoader {
 	// Compute base directory inside assets/ for resolving texture files referenced by the model
 	private String computeBaseDirRelativeToAssets(String filePath) {
 		if (filePath == null) return "";
-		String p = filePath.replace('\\', '/');
-		// Expect paths like "assets/models/.../file.gltf" in dev mode
-		final String assetsPrefix = "assets/";
-		if (p.startsWith(assetsPrefix)) {
-			p = p.substring(assetsPrefix.length());
-		}
-		int idx = p.lastIndexOf('/');
+		int idx = filePath.lastIndexOf('/');
 		if (idx >= 0) {
-			return p.substring(0, idx);
+			return filePath.substring(0, idx);
 		}
 		return "";
 	}
@@ -46,18 +35,36 @@ public class GLTFLoader {
 	 * Load a GLTF file and return a Three.js compatible scene object
 	 */
 	public Value loadGLTF(String filePath) {
-		// Load the scene using Assimp
-		AIScene scene = aiImportFile(filePath,
+		final int flags =
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
 			aiProcess_CalcTangentSpace |
-			aiProcess_JoinIdenticalVertices);
-			
+			aiProcess_JoinIdenticalVertices;
+
+		// Normalize file path
+		String rel = filePath.replace('\\', '/');
+		if (rel.startsWith("/")) rel = rel.substring(1);
+		if (rel.startsWith("assets/")) rel = rel.substring("assets/".length());
+
+		// Compute base directory relative to assets/ for resolving textures
+		this.modelBaseDir = computeBaseDirRelativeToAssets(rel);
+
+		// Load main model bytes from /assets
+		AIScene scene = null;
+		try (java.io.InputStream is = GLTFLoader.class.getResourceAsStream("/assets/" + rel)) {
+			if (is != null) {
+				byte[] mainBytes = is.readAllBytes();
+				ClasspathAssimpIO cpIO = new ClasspathAssimpIO(this.modelBaseDir, rel, mainBytes);
+				AIFileIO io = cpIO.get();
+				scene = aiImportFileEx(cpIO.getMainVirtualPath(), flags, io);
+				io.free();
+			}
+		} catch (Exception ignore) {}
+		
+		// Throw error if unable to load
 		if (scene == null) {
 			throw new RuntimeException("Failed to load GLTF file: " + filePath + " - " + aiGetErrorString());
 		}
-		// Compute base directory relative to assets/ for resolving textures
-		this.modelBaseDir = computeBaseDirRelativeToAssets(filePath);
 
 		// Create Three.js Group for the scene
 		Value Group = threeJS.getMember("Group");
@@ -189,14 +196,11 @@ public class GLTFLoader {
 		}
 		
 		// Create material (use MeshStandardMaterial for PBR)
-		Value MeshStandardMaterial = threeJS.getMember("MeshStandardMaterial");
-		Value material = MeshStandardMaterial.newInstance();
+		Value MeshPhysicalMaterial = threeJS.getMember("MeshPhysicalMaterial");
+		Value material = MeshPhysicalMaterial.newInstance();
 		material.putMember("metalness", 0.2);
 		material.putMember("roughness", 0.6);
-		
-		// PBR texture set
 		assignPBRTextures(material, mesh, scene);
-		
 		
 		// Create mesh
 		Value Mesh = threeJS.getMember("Mesh");
@@ -247,8 +251,6 @@ public class GLTFLoader {
 				material.putMember("map", tex);
 			}
 		}
-
-		// PBR texture maps
 		
 		// Normal map
 		String normalFile = queryTex.apply(aiTextureType_NORMALS);
