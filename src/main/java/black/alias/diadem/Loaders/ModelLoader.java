@@ -245,6 +245,18 @@ public class ModelLoader {
 			return null;
 		};
 
+		// Material base color (set regardless of presence of texture; map multiplies with color)
+		AIColor4D baseCol = AIColor4D.create();
+		boolean hasBaseColor = aiGetMaterialColor(aiMat, "$clr.base", 0, 0, baseCol) == aiReturn_SUCCESS
+			|| aiGetMaterialColor(aiMat, "$clr.diffuse", 0, 0, baseCol) == aiReturn_SUCCESS;
+		if (hasBaseColor) {
+			Value Color = threeJS.getMember("Color");
+			if (Color != null) {
+				Value matColor = Color.newInstance((double) baseCol.r(), (double) baseCol.g(), (double) baseCol.b());
+				material.putMember("color", matColor);
+			}
+		}
+
 		// Base color (albedo)
 		String baseColorFile = queryTex.apply(aiTextureType_BASE_COLOR);
 		if (baseColorFile == null) baseColorFile = queryTex.apply(aiTextureType_DIFFUSE);
