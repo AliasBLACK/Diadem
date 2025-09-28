@@ -158,7 +158,7 @@ public class JSInit {
 		try {
 			jsContext.executeScriptFile("/polyfills.js"); 
 			jsContext.executeModule("import * as THREE from 'three'; globalThis.THREE = THREE;");
-			jsContext.setupGLTFLoader();
+			jsContext.setupModelLoader();
 			jsContext.setupTextureLoader();
 			jsContext.executeScriptFile("/extensions.js");
 			scriptManager.loadMainScript();

@@ -13,13 +13,13 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
-import black.alias.diadem.Loaders.GLTFLoader;
+import black.alias.diadem.Loaders.ModelLoader;
 import black.alias.diadem.Loaders.TextureLoader;
 
 public class JSContext implements AutoCloseable {
 	private final Context jsContext;
 	private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
-	private GLTFLoader gltfLoaderInstance = null;
+	private ModelLoader gltfLoaderInstance = null;
 	private TextureLoader textureLoaderInstance = null;
 	
 	public JSContext() {
@@ -41,25 +41,25 @@ public class JSContext implements AutoCloseable {
 		}
 	}
 	
-	public void setupGLTFLoader() {
+	public void setupModelLoader() {
 		try {
-			bindGLTFFunction("loadGLTF", args -> {
+			bindGLTFFunction("loadModel", args -> {
 				String filePath = (String) args[0];
-				return getGLTFLoader().loadGLTF(filePath);
+				return getModelLoader().load(filePath);
 			});
 		} catch (Exception e) {
-			System.err.println("Failed to setup GLTF Loader: " + e.getMessage());
+			System.err.println("Failed to setup Model Loader: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
 	
-	private GLTFLoader getGLTFLoader() {
+	private ModelLoader getModelLoader() {
 		if (gltfLoaderInstance == null) {
 			Value threeJS = jsContext.getBindings("js").getMember("THREE");
 			if (threeJS == null) {
 				throw new RuntimeException("THREE.js is not loaded yet");
 			}
-			gltfLoaderInstance = new GLTFLoader(jsContext, threeJS, getTextureLoader());
+			gltfLoaderInstance = new ModelLoader(jsContext, threeJS, getTextureLoader());
 		}
 		return gltfLoaderInstance;
 	}

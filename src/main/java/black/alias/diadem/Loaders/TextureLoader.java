@@ -11,6 +11,8 @@ import java.nio.FloatBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.assimp.AITexel;
+import org.lwjgl.assimp.AITexture;
 
 /**
  * Dedicated texture loading utility for creating Three.js DataTextures from image files
@@ -153,7 +155,7 @@ public class TextureLoader {
 				return null;
 			}
 			
-			return createDataTextureFromImage(bufferedImage, texturePath);
+			return createDataTextureFromImage(bufferedImage);
 			
 		} catch (Exception e) {
 			System.err.println("Error loading texture: " + texturePath + " - " + e.getMessage());
@@ -175,7 +177,7 @@ public class TextureLoader {
 			
 			// Resize image if needed
 			BufferedImage resizedImage = resizeImage(originalImage, targetWidth, targetHeight);
-			return createDataTextureFromImage(resizedImage, texturePath);
+			return createDataTextureFromImage(resizedImage);
 			
 		} catch (Exception e) {
 			System.err.println("Error loading texture with size: " + texturePath + " - " + e.getMessage());
@@ -213,7 +215,7 @@ public class TextureLoader {
 				}
 			}
 			
-			return createDataTextureFromPixelData(pixelData, width, height, "checkerboard");
+			return createDataTextureFromPixelData(pixelData, width, height);
 			
 		} catch (Exception e) {
 			System.err.println("Error creating checkerboard texture: " + e.getMessage());
@@ -239,7 +241,7 @@ public class TextureLoader {
 	/**
 	 * Create Three.js DataTexture from BufferedImage
 	 */
-	private Value createDataTextureFromImage(BufferedImage bufferedImage, String texturePath) {
+	private Value createDataTextureFromImage(BufferedImage bufferedImage) {
 		int width = bufferedImage.getWidth();
 		int height = bufferedImage.getHeight();
 		
@@ -257,13 +259,13 @@ public class TextureLoader {
 			pixelData[i * 4 + 3] = (pixel >> 24) & 0xFF; // A
 		}
 		
-		return createDataTextureFromPixelData(pixelData, width, height, texturePath);
+		return createDataTextureFromPixelData(pixelData, width, height);
 	}
 	
 	/**
 	 * Create Three.js DataTexture from raw pixel data
 	 */
-	private Value createDataTextureFromPixelData(int[] pixelData, int width, int height, String name) {
+	private Value createDataTextureFromPixelData(int[] pixelData, int width, int height) {
 		// Create Uint8Array in JavaScript
 		Value Uint8Array = jsContext.eval("js", "Uint8Array");
 		Value imageData = Uint8Array.newInstance(pixelData);
@@ -279,6 +281,47 @@ public class TextureLoader {
 		texture.putMember("flipY", false); // Important for proper orientation
 		
 		return texture;
+	}
+
+	public Value createDataTextureFromAITexture(AITexture aiTexture) {
+		if (aiTexture == null) return null;
+		try {
+			int height = aiTexture.mHeight();
+			// Compressed texture (e.g., PNG/JPEG) embedded in the model
+			if (height == 0) {
+				// Assimp stores byte size in mWidth for compressed images
+				int dataSize = aiTexture.mWidth();
+				java.nio.ByteBuffer buf = aiTexture.pcDataCompressed();
+				if (buf == null) return null;
+				byte[] bytes = new byte[Math.min(dataSize, buf.remaining())];
+				int oldPos = buf.position();
+				buf.get(bytes, 0, bytes.length);
+				buf.position(oldPos);
+				java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(bytes);
+				BufferedImage img = ImageIO.read(bais);
+				if (img == null) return null;
+				return createDataTextureFromImage(img);
+			}
+
+			// Uncompressed texture: aiTexel RGBA data with width=mWidth, height=mHeight
+			int width = aiTexture.mWidth();
+			AITexel.Buffer texels = aiTexture.pcData();
+			if (texels == null) return null;
+			int pixelCount = width * height;
+			int[] rgba = new int[pixelCount * 4];
+			for (int i = 0; i < pixelCount; i++) {
+				AITexel t = texels.get(i);
+				rgba[i * 4] = t.r() & 0xFF;
+				rgba[i * 4 + 1] = t.g() & 0xFF;
+				rgba[i * 4 + 2] = t.b() & 0xFF;
+				rgba[i * 4 + 3] = t.a() & 0xFF;
+			}
+			return createDataTextureFromPixelData(rgba, width, height);
+		} catch (Exception e) {
+			System.err.println("Error creating DataTexture from AITexture: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	/**

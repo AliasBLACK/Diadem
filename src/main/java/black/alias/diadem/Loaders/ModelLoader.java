@@ -8,17 +8,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.assimp.Assimp.*;
-public class GLTFLoader {
+public class ModelLoader {
 	
 	private final Context jsContext;
 	private final Value threeJS;
 	private final TextureLoader textureLoader;
-	private String modelBaseDir = ""; // path relative to assets/ for resolving textures
+	private String modelBaseDir = "";
+	private AIPropertyStore store = aiCreatePropertyStore();
 	
-	public GLTFLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
+	public ModelLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
 		this.jsContext = jsContext;
 		this.threeJS = threeJS;
 		this.textureLoader = textureLoader;
+		aiSetImportPropertyInteger(store, AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING, 1);
+	}
+
+	@Override
+	public void finalize() {
+		aiReleasePropertyStore(store);
 	}
 
 	// Compute base directory inside assets/ for resolving texture files referenced by the model
@@ -34,7 +41,7 @@ public class GLTFLoader {
 	/**
 	 * Load a GLTF file and return a Three.js compatible scene object
 	 */
-	public Value loadGLTF(String filePath) {
+	public Value load(String filePath) {
 		final int flags =
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
@@ -51,12 +58,12 @@ public class GLTFLoader {
 
 		// Load main model bytes from /assets
 		AIScene scene = null;
-		try (java.io.InputStream is = GLTFLoader.class.getResourceAsStream("/assets/" + rel)) {
+		try (java.io.InputStream is = ModelLoader.class.getResourceAsStream("/assets/" + rel)) {
 			if (is != null) {
 				byte[] mainBytes = is.readAllBytes();
 				ClasspathAssimpIO cpIO = new ClasspathAssimpIO(this.modelBaseDir, rel, mainBytes);
 				AIFileIO io = cpIO.get();
-				scene = aiImportFileEx(cpIO.getMainVirtualPath(), flags, io);
+				scene = aiImportFileExWithProperties(cpIO.getMainVirtualPath(), flags, io, store);
 				io.free();
 			}
 		} catch (Exception ignore) {}
@@ -230,8 +237,7 @@ public class GLTFLoader {
 		
 		// Base color texture
 		if (baseColorFile != null) {
-			String resolved = resolveTextureRelativeToAssets(baseColorFile);
-			Value tex = textureLoader.loadTexture(resolved);
+			Value tex = loadTextureReference(baseColorFile, scene);
 			if (tex != null) {
 				Value ClampToEdgeWrapping = threeJS.getMember("ClampToEdgeWrapping");
 				if (ClampToEdgeWrapping != null) {
@@ -256,8 +262,7 @@ public class GLTFLoader {
 		String normalFile = queryTex.apply(aiTextureType_NORMALS);
 		if (normalFile == null) normalFile = queryTex.apply(aiTextureType_HEIGHT);
 		if (normalFile != null) {
-			String resolved = resolveTextureRelativeToAssets(normalFile);
-			Value tex = textureLoader.loadTexture(resolved);
+			Value tex = loadTextureReference(normalFile, scene);
 			if (tex != null) {
 				applyPBRTextureSettings(tex, false);
 				material.putMember("normalMap", tex);
@@ -269,8 +274,7 @@ public class GLTFLoader {
 		if (mrFile == null) mrFile = queryTex.apply(aiTextureType_DIFFUSE_ROUGHNESS);
 		if (mrFile == null) mrFile = queryTex.apply(aiTextureType_UNKNOWN);
 		if (mrFile != null) {
-			String resolved = resolveTextureRelativeToAssets(mrFile);
-			Value tex = textureLoader.loadTexture(resolved);
+			Value tex = loadTextureReference(mrFile, scene);
 			if (tex != null) {
 				applyPBRTextureSettings(tex, false);
 				material.putMember("metalnessMap", tex);
@@ -282,8 +286,7 @@ public class GLTFLoader {
 		String aoFile = queryTex.apply(aiTextureType_AMBIENT_OCCLUSION);
 		if (aoFile == null) aoFile = queryTex.apply(aiTextureType_LIGHTMAP);
 		if (aoFile != null) {
-			String resolved = resolveTextureRelativeToAssets(aoFile);
-			Value tex = textureLoader.loadTexture(resolved);
+			Value tex = loadTextureReference(aoFile, scene);
 			if (tex != null) {
 				applyPBRTextureSettings(tex, false);
 				material.putMember("aoMap", tex);
@@ -293,8 +296,7 @@ public class GLTFLoader {
 		// Emissive
 		String emissiveFile = queryTex.apply(aiTextureType_EMISSIVE);
 		if (emissiveFile != null) {
-			String resolved = resolveTextureRelativeToAssets(emissiveFile);
-			Value tex = textureLoader.loadTexture(resolved);
+			Value tex = loadTextureReference(emissiveFile, scene);
 			if (tex != null) {
 				applyPBRTextureSettings(tex, true);
 				material.putMember("emissiveMap", tex);
@@ -306,6 +308,41 @@ public class GLTFLoader {
 				}
 			}
 		}
+	}
+
+	// Load either an external texture (relative to assets/) or an embedded Assimp texture ("*index")
+	private Value loadTextureReference(String ref, AIScene scene) {
+		if (ref == null) return null;
+		String tf = ref.trim();
+		if (tf.startsWith("*")) {
+			int idx = parseEmbeddedIndex(tf);
+			if (idx >= 0 && scene.mNumTextures() > idx) {
+				AITexture aiTex = AITexture.create(scene.mTextures().get(idx));
+				return textureLoader.createDataTextureFromAITexture(aiTex);
+			}
+			return null;
+		}
+		String resolved = resolveTextureRelativeToAssets(tf);
+		return textureLoader.loadTexture(resolved);
+	}
+
+	private int parseEmbeddedIndex(String ref) {
+		// ref like "*0" or "*0.jpg"; parse consecutive digits after '*'
+		int i = 1;
+		int len = ref.length();
+		int val = 0;
+		boolean found = false;
+		while (i < len) {
+			char c = ref.charAt(i);
+			if (c >= '0' && c <= '9') {
+				found = true;
+				val = val * 10 + (c - '0');
+				i++;
+			} else {
+				break;
+			}
+		}
+		return found ? val : -1;
 	}
 
 	// Apply consistent PBR texture settings (same as base color texture)
