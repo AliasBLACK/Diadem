@@ -23,11 +23,6 @@ public class ModelLoader {
 		aiSetImportPropertyInteger(store, AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING, 1);
 	}
 
-	@Override
-	public void finalize() {
-		aiReleasePropertyStore(store);
-	}
-
 	// Compute base directory inside assets/ for resolving texture files referenced by the model
 	private String computeBaseDirRelativeToAssets(String filePath) {
 		if (filePath == null) return "";
@@ -398,5 +393,9 @@ public class ModelLoader {
 		} else {
 			return modelBaseDir + "/" + tf;
 		}
+	}
+
+	public void close() {
+		aiReleasePropertyStore(store);
 	}
 }

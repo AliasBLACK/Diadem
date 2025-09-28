@@ -19,7 +19,7 @@ import black.alias.diadem.Loaders.TextureLoader;
 public class JSContext implements AutoCloseable {
 	private final Context jsContext;
 	private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
-	private ModelLoader gltfLoaderInstance = null;
+	private ModelLoader modelLoaderInstance = null;
 	private TextureLoader textureLoaderInstance = null;
 	
 	public JSContext() {
@@ -54,14 +54,14 @@ public class JSContext implements AutoCloseable {
 	}
 	
 	private ModelLoader getModelLoader() {
-		if (gltfLoaderInstance == null) {
+		if (modelLoaderInstance == null) {
 			Value threeJS = jsContext.getBindings("js").getMember("THREE");
 			if (threeJS == null) {
 				throw new RuntimeException("THREE.js is not loaded yet");
 			}
-			gltfLoaderInstance = new ModelLoader(jsContext, threeJS, getTextureLoader());
+			modelLoaderInstance = new ModelLoader(jsContext, threeJS, getTextureLoader());
 		}
-		return gltfLoaderInstance;
+		return modelLoaderInstance;
 	}
 	
 	private void bindGLTFFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
@@ -374,5 +374,6 @@ public class JSContext implements AutoCloseable {
 	
 	public void close() {
 		jsContext.close();
+		modelLoaderInstance.close();
 	}
 }
