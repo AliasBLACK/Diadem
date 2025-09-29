@@ -1,6 +1,7 @@
 const GL11 = Java.type('org.lwjgl.opengl.GL11');
 const GL12 = Java.type('org.lwjgl.opengl.GL12');
 const GL13 = Java.type('org.lwjgl.opengl.GL13');
+const GL14 = Java.type('org.lwjgl.opengl.GL14');
 const GL15 = Java.type('org.lwjgl.opengl.GL15');
 const GL20 = Java.type('org.lwjgl.opengl.GL20');
 const GL30 = Java.type('org.lwjgl.opengl.GL30');
@@ -699,11 +700,19 @@ globalThis.gl = {
 				// Upload subimage
 				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, buffer);
 
+			} else if (pixels && pixels instanceof Float32Array) {
+				// Handle Float32Array with proper conversion to FloatBuffer
+				const floatBuffer = bufferUtils.createFloatBuffer(pixels.length);
+				for (let i = 0; i < pixels.length; i++) {
+					floatBuffer.put(i, pixels[i]);
+				}
+				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, floatBuffer);
+				
 			} else if (pixels) {
+				// Fallback for other types
+				console.warn("texSubImage2D: Unhandled pixel type, attempting direct call");
 				GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 			}
-
-			// (suppress per-call GL error prints here to reduce noise)
 		}
 	},
 
@@ -2012,4 +2021,10 @@ globalThis.gl = {
 	TEXTURE_2D_ARRAY: 0x8C1A,
 	UNIFORM_BUFFER: 0x8A11,
 	TRANSFORM_FEEDBACK_BUFFER: 0x8C8E,
+	
+	FUNC_ADD: 0x8006,
+	FUNC_SUBTRACT: 0x800A,
+	FUNC_REVERSE_SUBTRACT: 0x800B,
+	MIN: 0x8007,
+	MAX: 0x8008,
 }
