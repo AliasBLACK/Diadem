@@ -1,4 +1,4 @@
-package black.alias.diadem.Utils;
+package black.alias.diadem;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;

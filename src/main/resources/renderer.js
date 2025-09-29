@@ -10,7 +10,7 @@ const GL33 = Java.type('org.lwjgl.opengl.GL33');
 const GL40 = Java.type('org.lwjgl.opengl.GL40');
 const GL42 = Java.type('org.lwjgl.opengl.GL42');
 const GL43 = Java.type('org.lwjgl.opengl.GL43');
-const glAdapter = Java.type('black.alias.diadem.Utils.GLAdapter');
+const glAdapter = Java.type('black.alias.diadem.GLAdapter');
 const bufferUtils = Java.type('org.lwjgl.BufferUtils');
 
 const ImageIO = Java.type('javax.imageio.ImageIO');
