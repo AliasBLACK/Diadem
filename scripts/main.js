@@ -35,7 +35,7 @@ export default class Main extends Entity {
 			this.scene.add(this.model);
 			this.model.position.set(0, 0, 0);
 			this.model.rotation.set(Math.PI * .5, 0, 0);
-			this.model.scale.set(.5, .5, .5);
+			this.model.scale.set(.7, .7, .7);
 		} else {
 			throw new Error('Model returned no scene');
 		}
