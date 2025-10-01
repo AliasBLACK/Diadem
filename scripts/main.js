@@ -29,14 +29,13 @@ export default class Main extends Entity {
 		pmremGenerator.dispose();
 
 		// Model
-		// const gltf = loadModel('models/damagedHelmet/DamagedHelmet.gltf')
-		const gltf = loadModel('assets/models/mixamo/SambaDancing.fbx');
+		const gltf = loadModel('models/damagedHelmet/DamagedHelmet.gltf')
 		if (gltf && gltf.scene) {
 			this.model = gltf.scene;
 			this.scene.add(this.model);
 			this.model.position.set(0, 0, 0);
 			this.model.rotation.set(Math.PI * .5, 0, 0);
-			this.model.scale.set(.01, .01, .01);
+			this.model.scale.set(.5, .5, .5);
 		} else {
 			throw new Error('Model returned no scene');
 		}
