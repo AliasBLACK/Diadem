@@ -35,19 +35,29 @@ export default class Main extends Entity {
 			this.model = gltf.scene;
 			this.scene.add(this.model);
 			this.model.position.set(0, 0, 0);
-			this.model.rotation.set(Math.PI * .5, 0, 0);
-			this.model.scale.set(.01, .01, .01);
+			this.model.rotation.set(0, 0, 0);
+			this.model.scale.set(1, 1, 1);
+
+			// Animation
+			this.mixer = new THREE.AnimationMixer(this.model);
+			this.action = this.mixer.clipAction(gltf.animations[0]);
+			this.action.play();
+
+			// Optional: Add SkeletonHelper to visualize bone animation
+			const helper = new THREE.SkeletonHelper(this.model);
+			helper.visible = true;
+			this.scene.add(helper);
 		} else {
 			throw new Error('Model returned no scene');
 		}
 
 		// Camera
-		this.camera.position.set(0, 0, 2.2);
+		this.camera.position.set(0, 0, 500);
 	}
 	
 	Update (delta) {
-		if (this.model) {
-			this.model.rotation.z += 0.25 * delta;
+		if (this.mixer) {
+			this.mixer.update(delta);
 		}
 		this.renderer.render(this.scene, this.camera);
 	}
