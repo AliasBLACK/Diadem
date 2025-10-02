@@ -36,8 +36,7 @@ public class ModelLoader {
     // Convert Assimp AIMatrix4x4 to Three.js Matrix4
     private Value toThreeMatrix(AIMatrix4x4 m) {
         Value Matrix4 = threeJS.getMember("Matrix4");
-        Value mat = Matrix4.newInstance();
-        mat.invokeMember("set",
+        Value mat = Matrix4.newInstance(
             (double)m.a1(), (double)m.a2(), (double)m.a3(), (double)m.a4(),
             (double)m.b1(), (double)m.b2(), (double)m.b3(), (double)m.b4(),
             (double)m.c1(), (double)m.c2(), (double)m.c3(), (double)m.c4(),
