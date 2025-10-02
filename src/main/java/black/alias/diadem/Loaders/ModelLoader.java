@@ -114,16 +114,25 @@ public class ModelLoader {
                 
                 // Update world matrices to establish bone positions
                 rootGroup.invokeMember("updateMatrixWorld", true);
+
+                Value inverseBindMatrices = Array.newInstance(bones.getArraySize());
+                for (int i = 0; i < bones.getArraySize(); i++) {
+                    Value bone = bones.getArrayElement(i);
+                    String name = bone.getMember("name").asString();
+                    Value inverseBindMatrix = boneOffsets.get(name);
+                    inverseBindMatrices.setArrayElement(i, inverseBindMatrix);
+                }
                 
                 // Create skeleton
                 Value Skeleton = threeJS.getMember("Skeleton");
-                Value skeleton = Skeleton.newInstance(bones, boneOffsets);
+                Value skeleton = Skeleton.newInstance(bones);
                 
                 for (int i = 0; i < skinnedMeshes.getArraySize(); i++) {
                     Value skinnedMesh = skinnedMeshes.getArrayElement(i);
                     skinnedMesh.invokeMember("bind", skeleton);
                     rootGroup.invokeMember("add", skinnedMesh);
                 }
+                skeleton.putMember("boneInverses", inverseBindMatrices);
             }
         }
         
