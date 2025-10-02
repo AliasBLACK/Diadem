@@ -116,17 +116,13 @@ public class ModelLoader {
                 // Update world matrices to establish bone positions
                 rootGroup.invokeMember("updateMatrixWorld", true);
                 
-                // Create skeleton with bones only - Three.js will calculate inverse bind matrices
+                // Create skeleton
                 Value Skeleton = threeJS.getMember("Skeleton");
-                Value skeleton = Skeleton.newInstance(bones);
-                
-                // Bind skinned meshes with identity matrix
-                Value Matrix4 = threeJS.getMember("Matrix4");
-                Value identityMatrix = Matrix4.newInstance();
+                Value skeleton = Skeleton.newInstance(bones, boneOffsets);
                 
                 for (int i = 0; i < skinnedMeshes.getArraySize(); i++) {
                     Value skinnedMesh = skinnedMeshes.getArrayElement(i);
-                    skinnedMesh.invokeMember("bind", skeleton, identityMatrix);
+                    skinnedMesh.invokeMember("bind", skeleton);
                     rootGroup.invokeMember("add", skinnedMesh);
                 }
             }
