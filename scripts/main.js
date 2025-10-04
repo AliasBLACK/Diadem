@@ -1,6 +1,5 @@
 export default class Main extends Entity {
 
-	// Called at the start of the Entity lifecycle.
 	Start () {
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.PerspectiveCamera(60, 1920/1080, 0.1, 1000);
@@ -10,7 +9,6 @@ export default class Main extends Entity {
 		this.renderer.toneMappingExposure = 1.0;
 		this.renderer.physicallyCorrectLights = true;
 
-		// Environment
 		const hdrCube = loadCubeTexture([
 			'textures/cube/pisaHDR/px.hdr',
 			'textures/cube/pisaHDR/nx.hdr',
@@ -21,41 +19,29 @@ export default class Main extends Entity {
 		]);
 		this.scene.background = hdrCube;
 
-		// Environment mapping
 		const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
 		pmremGenerator.compileEquirectangularShader();
 		const envMap = pmremGenerator.fromCubemap(hdrCube);
 		this.scene.environment = envMap.texture;
 		pmremGenerator.dispose();
 
-		// Model
-		// const gltf = loadModel('models/damagedHelmet/DamagedHelmet.gltf')
-		const gltf = loadModel('assets/models/mixamo/SambaDancing.fbx');
+		const gltf = loadGLTF('assets/models/damagedHelmet/damagedHelmet.glb');
 		if (gltf && gltf.scene) {
 			this.model = gltf.scene;
-			this.scene.add(this.model);
-			this.model.position.set(0, 0, 0);
-			this.model.rotation.set(0, 0, 0);
+			this.model.rotation.set(Math.PI / 2, 0, 0);
 			this.model.scale.set(1, 1, 1);
-
-			// Animation
-			this.mixer = new THREE.AnimationMixer(this.model);
-			this.action = this.mixer.clipAction(gltf.animations[0]);
-			this.action.play();
-
-			// Optional: Add SkeletonHelper to visualize bone animation
-			const helper = new THREE.SkeletonHelper(this.model);
-			helper.visible = true;
-			this.scene.add(helper);
+			this.scene.add(this.model);
 		} else {
 			throw new Error('Model returned no scene');
 		}
 
-		// Camera
-		this.camera.position.set(0, 0, 500);
+		this.camera.position.set(0, 0, 3);
 	}
 	
 	Update (delta) {
+		if (this.model) {
+			this.model.rotation.z += delta * 0.5;
+		}
 		if (this.mixer) {
 			this.mixer.update(delta);
 		}

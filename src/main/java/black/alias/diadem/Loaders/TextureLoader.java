@@ -283,6 +283,30 @@ public class TextureLoader {
 		return texture;
 	}
 
+	/**
+	 * Create Three.js DataTexture from image bytes (PNG/JPEG/etc)
+	 * Used by JGLTFLoader for embedded GLB textures
+	 */
+	public Value createDataTextureFromImageBytes(byte[] imageBytes) {
+		if (imageBytes == null || imageBytes.length == 0) {
+			return null;
+		}
+		
+		try {
+			java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(imageBytes);
+			BufferedImage img = ImageIO.read(bais);
+			if (img == null) {
+				System.err.println("TextureLoader: Failed to decode image from bytes");
+				return null;
+			}
+			return createDataTextureFromImage(img);
+		} catch (Exception e) {
+			System.err.println("TextureLoader: Error creating DataTexture from image bytes: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	public Value createDataTextureFromAITexture(AITexture aiTexture) {
 		if (aiTexture == null) return null;
 		try {

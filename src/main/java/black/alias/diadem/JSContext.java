@@ -15,12 +15,14 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
 import black.alias.diadem.Loaders.ModelLoader;
 import black.alias.diadem.Loaders.TextureLoader;
+import black.alias.diadem.Loaders.JGLTFLoader;
 
 public class JSContext implements AutoCloseable {
 	private final Context jsContext;
 	private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
 	private ModelLoader modelLoaderInstance = null;
 	private TextureLoader textureLoaderInstance = null;
+	private JGLTFLoader jgltfLoaderInstance = null;
 	
 	public JSContext() {
 		this.jsContext = Context.newBuilder("js")
@@ -47,6 +49,12 @@ public class JSContext implements AutoCloseable {
 				String filePath = (String) args[0];
 				return getModelLoader().load(filePath);
 			});
+			
+			// Expose jgltf loader
+			bindGLTFFunction("loadGLTF", args -> {
+				String filePath = (String) args[0];
+				return getJGLTFLoader().load(filePath);
+			});
 		} catch (Exception e) {
 			System.err.println("Failed to setup Model Loader: " + e.getMessage());
 			e.printStackTrace();
@@ -62,6 +70,17 @@ public class JSContext implements AutoCloseable {
 			modelLoaderInstance = new ModelLoader(jsContext, threeJS, getTextureLoader());
 		}
 		return modelLoaderInstance;
+	}
+	
+	private JGLTFLoader getJGLTFLoader() {
+		if (jgltfLoaderInstance == null) {
+			Value threeJS = jsContext.getBindings("js").getMember("THREE");
+			if (threeJS == null) {
+				throw new RuntimeException("THREE.js is not loaded yet");
+			}
+			jgltfLoaderInstance = new JGLTFLoader(jsContext, threeJS, getTextureLoader());
+		}
+		return jgltfLoaderInstance;
 	}
 	
 	private void bindGLTFFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
