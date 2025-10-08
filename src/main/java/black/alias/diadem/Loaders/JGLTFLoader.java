@@ -185,9 +185,10 @@ public class JGLTFLoader {
 
             // If single mesh, create mesh.
             else if (meshes.size() == 1) {
-                obj = createMeshForNode(node, meshes.get(0));
+                obj = createMesh(meshes.get(0));
                 applyNodeTransform(obj, node);
-                skinnedGroups.get(getSkeletonReference(node.getSkinModel())).add(obj);
+                if (obj.hasMember("isSkinnedMesh") && obj.getMember("isSkinnedMesh").asBoolean())
+                    skinnedGroups.get(getSkeletonReference(node.getSkinModel())).add(obj);
             }
 
             // If multiple meshes, create group and add meshes.
@@ -195,8 +196,9 @@ public class JGLTFLoader {
                 obj = threeJS.getMember("Group").newInstance();
                 applyNodeTransform(obj, node);
                 for (MeshModel mesh : meshes) {
-                    Value meshObj = createMeshForNode(node, mesh);
-                    skinnedGroups.get(getSkeletonReference(node.getSkinModel())).add(meshObj);
+                    Value meshObj = createMesh(mesh);
+                    if (obj.hasMember("isSkinnedMesh") && obj.getMember("isSkinnedMesh").asBoolean())
+                        skinnedGroups.get(getSkeletonReference(node.getSkinModel())).add(meshObj);
                     obj.invokeMember("add", meshObj);
                 }
             }
@@ -232,7 +234,7 @@ public class JGLTFLoader {
         mat.invokeMember("decompose", position, quaternion, scale);
     }
 
-    private Value createMeshForNode(NodeModel node, MeshModel meshModel) {
+    private Value createMesh(MeshModel meshModel) {
         List<MeshPrimitiveModel> primitives = meshModel.getMeshPrimitiveModels();
         if (primitives.isEmpty()) return null;
         MeshPrimitiveModel primitive = primitives.get(0);
@@ -295,7 +297,7 @@ public class JGLTFLoader {
         geometry.invokeMember("computeBoundingBox");
 
         // Decide Mesh or SkinnedMesh
-        boolean isSkinned = (jointsAccessor != null && weightsAccessor != null) || node.getSkinModel() != null;
+        boolean isSkinned = (jointsAccessor != null && weightsAccessor != null);
         Value MeshClass = threeJS.getMember(isSkinned ? "SkinnedMesh" : "Mesh");
         Value mesh = MeshClass.newInstance(geometry, createMaterial(primitive.getMaterialModel(), hasVertexColors));
         if (meshModel.getName() != null) mesh.putMember("name", meshModel.getName());
