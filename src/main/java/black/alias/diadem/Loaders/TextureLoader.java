@@ -11,8 +11,6 @@ import java.nio.FloatBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.assimp.AITexel;
-import org.lwjgl.assimp.AITexture;
 
 /**
  * Dedicated texture loading utility for creating Three.js DataTextures from image files
@@ -283,42 +281,25 @@ public class TextureLoader {
 		return texture;
 	}
 
-	public Value createDataTextureFromAITexture(AITexture aiTexture) {
-		if (aiTexture == null) return null;
+	/**
+	 * Create Three.js DataTexture from image bytes (PNG/JPEG/etc)
+	 * Used by JGLTFLoader for embedded GLB textures
+	 */
+	public Value createDataTextureFromImageBytes(byte[] imageBytes) {
+		if (imageBytes == null || imageBytes.length == 0) {
+			return null;
+		}
+		
 		try {
-			int height = aiTexture.mHeight();
-			// Compressed texture (e.g., PNG/JPEG) embedded in the model
-			if (height == 0) {
-				// Assimp stores byte size in mWidth for compressed images
-				int dataSize = aiTexture.mWidth();
-				java.nio.ByteBuffer buf = aiTexture.pcDataCompressed();
-				if (buf == null) return null;
-				byte[] bytes = new byte[Math.min(dataSize, buf.remaining())];
-				int oldPos = buf.position();
-				buf.get(bytes, 0, bytes.length);
-				buf.position(oldPos);
-				java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(bytes);
-				BufferedImage img = ImageIO.read(bais);
-				if (img == null) return null;
-				return createDataTextureFromImage(img);
+			java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(imageBytes);
+			BufferedImage img = ImageIO.read(bais);
+			if (img == null) {
+				System.err.println("TextureLoader: Failed to decode image from bytes");
+				return null;
 			}
-
-			// Uncompressed texture: aiTexel RGBA data with width=mWidth, height=mHeight
-			int width = aiTexture.mWidth();
-			AITexel.Buffer texels = aiTexture.pcData();
-			if (texels == null) return null;
-			int pixelCount = width * height;
-			int[] rgba = new int[pixelCount * 4];
-			for (int i = 0; i < pixelCount; i++) {
-				AITexel t = texels.get(i);
-				rgba[i * 4] = t.r() & 0xFF;
-				rgba[i * 4 + 1] = t.g() & 0xFF;
-				rgba[i * 4 + 2] = t.b() & 0xFF;
-				rgba[i * 4 + 3] = t.a() & 0xFF;
-			}
-			return createDataTextureFromPixelData(rgba, width, height);
+			return createDataTextureFromImage(img);
 		} catch (Exception e) {
-			System.err.println("Error creating DataTexture from AITexture: " + e.getMessage());
+			System.err.println("TextureLoader: Error creating DataTexture from image bytes: " + e.getMessage());
 			e.printStackTrace();
 			return null;
 		}

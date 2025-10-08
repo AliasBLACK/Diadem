@@ -13,14 +13,14 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
-import black.alias.diadem.Loaders.ModelLoader;
 import black.alias.diadem.Loaders.TextureLoader;
+import black.alias.diadem.Loaders.GLTFLoader;
 
 public class JSContext implements AutoCloseable {
 	private final Context jsContext;
 	private final Path THREE_MODULE_PATH = Paths.get("/virtual/three");
-	private ModelLoader modelLoaderInstance = null;
 	private TextureLoader textureLoaderInstance = null;
+	private GLTFLoader jgltfLoaderInstance = null;
 	
 	public JSContext() {
 		this.jsContext = Context.newBuilder("js")
@@ -43,9 +43,10 @@ public class JSContext implements AutoCloseable {
 	
 	public void setupModelLoader() {
 		try {
-			bindGLTFFunction("loadModel", args -> {
+			// Expose jgltf loader
+			bindFunction("loadGLTF", args -> {
 				String filePath = (String) args[0];
-				return getModelLoader().load(filePath);
+				return getJGLTFLoader().load(filePath);
 			});
 		} catch (Exception e) {
 			System.err.println("Failed to setup Model Loader: " + e.getMessage());
@@ -53,18 +54,18 @@ public class JSContext implements AutoCloseable {
 		}
 	}
 	
-	private ModelLoader getModelLoader() {
-		if (modelLoaderInstance == null) {
+	private GLTFLoader getJGLTFLoader() {
+		if (jgltfLoaderInstance == null) {
 			Value threeJS = jsContext.getBindings("js").getMember("THREE");
 			if (threeJS == null) {
 				throw new RuntimeException("THREE.js is not loaded yet");
 			}
-			modelLoaderInstance = new ModelLoader(jsContext, threeJS, getTextureLoader());
+			jgltfLoaderInstance = new GLTFLoader(jsContext, threeJS, getTextureLoader());
 		}
-		return modelLoaderInstance;
+		return jgltfLoaderInstance;
 	}
 	
-	private void bindGLTFFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
+	private void bindFunction(String functionName, java.util.function.Function<Object[], Object> handler) {
 		jsContext.getBindings("js").putMember(functionName, new org.graalvm.polyglot.proxy.ProxyExecutable() {
 			@Override
 			public Object execute(Value... args) {
@@ -374,6 +375,5 @@ public class JSContext implements AutoCloseable {
 	
 	public void close() {
 		jsContext.close();
-		modelLoaderInstance.close();
 	}
 }

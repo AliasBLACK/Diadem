@@ -29,12 +29,12 @@ export default class Main extends Entity {
 		pmremGenerator.dispose();
 
 		// Model
-		const gltf = loadModel('models/damagedHelmet/DamagedHelmet.gltf')
+		const gltf = loadGLTF('models/damagedHelmet/DamagedHelmet.glb')
 		if (gltf && gltf.scene) {
 			this.model = gltf.scene;
 			this.scene.add(this.model);
 			this.model.position.set(0, 0, 0);
-			this.model.rotation.set(Math.PI * .5, 0, 0);
+			this.model.rotation.set(0, 0, 0);
 			this.model.scale.set(.7, .7, .7);
 		} else {
 			throw new Error('Model returned no scene');
@@ -46,7 +46,7 @@ export default class Main extends Entity {
 	
 	Update (delta) {
 		if (this.model) {
-			this.model.rotation.z += 0.25 * delta;
+			this.model.rotation.y += 0.25 * delta;
 		}
 		this.renderer.render(this.scene, this.camera);
 	}
