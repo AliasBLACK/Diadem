@@ -25,23 +25,32 @@ export default class Main extends Entity {
 		this.scene.environment = envMap.texture;
 		pmremGenerator.dispose();
 
-		const gltf = loadGLTF('assets/models/damagedHelmet/damagedHelmet.glb');
+		const gltf = loadGLTF('assets/models/mixamo/untitled.glb');
 		if (gltf && gltf.scene) {
 			this.model = gltf.scene;
-			this.model.rotation.set(Math.PI / 2, 0, 0);
+			this.model.position.set(0, -1, 0);
+			this.model.rotation.set(0, 0, 0);
 			this.model.scale.set(1, 1, 1);
 			this.scene.add(this.model);
+
+			this.mixer = new THREE.AnimationMixer(this.model);
+			const action = this.mixer.clipAction(gltf.animations[0]);
+			action.play();
+
+			this.skeletonHelper = new THREE.SkeletonHelper(this.model);
+			this.skeletonHelper.visible = true;
+			this.scene.add(this.skeletonHelper);
 		} else {
 			throw new Error('Model returned no scene');
 		}
 
-		this.camera.position.set(0, 0, 3);
+		this.camera.position.set(0, 0, 1);
 	}
 	
 	Update (delta) {
-		if (this.model) {
-			this.model.rotation.z += delta * 0.5;
-		}
+		// if (this.model) {
+		// 	this.model.rotation.x += delta * 0.1;
+		// }
 		if (this.mixer) {
 			this.mixer.update(delta);
 		}

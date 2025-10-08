@@ -79,16 +79,27 @@ public class JGLTFLoader {
             HashMap<NodeModel, List<Value>> skinnedGroups = new HashMap<>();
             for (NodeModel key : boneNames.keySet()) skinnedGroups.put(key, new ArrayList<>());
 
-            // Created ordered bone inverses.
+            // Create ordered bone inverses.
             HashMap<NodeModel, Value> orderedBoneInverses = new HashMap<>();
             for (NodeModel key : boneNames.keySet()) orderedBoneInverses.put(key, Array.newInstance());
+
+            // Create bone name to uuid map.
+            HashMap<String, String> boneNameToUuid = new HashMap<>();
 
             // Traverse scenes and build node hierarchy with correct transforms
             Value scenes = Array.newInstance();
             for (SceneModel scene : gltfModel.getSceneModels()) {
                 Value rootGroup = threeJS.getMember("Group").newInstance();
                 for (NodeModel rootNode : scene.getNodeModels()) {
-                    Value node = addNodeRecursive(rootNode, boneNames, boneInverses, bones, skinnedGroups, orderedBoneInverses);
+                    Value node = addNodeRecursive(
+                        rootNode,
+                        boneNames,
+                        boneInverses,
+                        bones,
+                        skinnedGroups,
+                        orderedBoneInverses,
+                        boneNameToUuid
+                    );
                     rootGroup.invokeMember("add", node);
                 }
                 rootGroup.invokeMember("updateMatrixWorld", true);
@@ -110,8 +121,7 @@ public class JGLTFLoader {
                     if (skinnedMesh == null) continue;
                     Value material = skinnedMesh.getMember("material");
                     if (material != null) material.putMember("skinning", true);
-                    Value identityMatrix = threeJS.getMember("Matrix4").newInstance();
-                    skinnedMesh.invokeMember("bind", skeleton, identityMatrix);
+                    skinnedMesh.invokeMember("bind", skeleton);
                     if (skinnedMesh.hasMember("normalizeSkinWeights"))
                         skinnedMesh.invokeMember("normalizeSkinWeights");
                 }
@@ -122,9 +132,12 @@ public class JGLTFLoader {
                 scenes.getArrayElement(s).invokeMember("updateMatrixWorld", true);
             }
             
+            // Build animations (clips)
+            Value animations = buildAnimations(gltfModel, boneNameToUuid);
+
             Value gltfObject = Object.newInstance();
             gltfObject.putMember("scene", scenes.getArrayElement(0));
-            gltfObject.putMember("animations", Array.newInstance());
+            gltfObject.putMember("animations", animations);
             gltfObject.putMember("scenes", scenes);
             gltfObject.putMember("cameras", Array.newInstance());
             
@@ -140,7 +153,8 @@ public class JGLTFLoader {
         HashMap<NodeModel, HashMap<String, Value>> boneInverses,
         HashMap<NodeModel, Value> bones,
         HashMap<NodeModel, List<Value>> skinnedGroups,
-        HashMap<NodeModel, Value> orderedBoneInverses
+        HashMap<NodeModel, Value> orderedBoneInverses,
+        HashMap<String, String> boneNameToUuid
     ) {
         Value obj;
 
@@ -148,7 +162,6 @@ public class JGLTFLoader {
         NodeModel boneRoot = getBoneArrayKey(node.getName(), boneNames);
         if (boneRoot != null && node.getName() != null) {
             obj = threeJS.getMember("Bone").newInstance();
-            obj.putMember("name", node.getName());
             applyNodeTransform(obj, node);
             bones.get(boneRoot).invokeMember("push", obj);
             Value inverse = boneInverses.get(boneRoot).get(node.getName());
@@ -157,6 +170,7 @@ public class JGLTFLoader {
                 inverse = threeJS.getMember("Matrix4").newInstance();
             }
             orderedBoneInverses.get(boneRoot).invokeMember("push", inverse);
+            boneNameToUuid.put(node.getName(), obj.getMember("uuid").asString());
         }
 
         else {
@@ -166,7 +180,6 @@ public class JGLTFLoader {
             // If no meshes, create group.
             if (meshes.isEmpty()) {
                 obj = threeJS.getMember("Group").newInstance();
-                obj.putMember("name", node.getName());
                 applyNodeTransform(obj, node);
             }
 
@@ -180,7 +193,6 @@ public class JGLTFLoader {
             // If multiple meshes, create group and add meshes.
             else {
                 obj = threeJS.getMember("Group").newInstance();
-                obj.putMember("name", node.getName());
                 applyNodeTransform(obj, node);
                 for (MeshModel mesh : meshes) {
                     Value meshObj = createMeshForNode(node, mesh);
@@ -190,9 +202,22 @@ public class JGLTFLoader {
             }
         }
 
+        // Set name.
+        String name = node.getName();
+        if (name == null) name = obj.getMember("type").toString();
+        obj.putMember("name", name);
+
         // Recurse to children.
         for (NodeModel child : node.getChildren()) {
-            Value childObj = addNodeRecursive(child, boneNames, boneInverses, bones, skinnedGroups, orderedBoneInverses);
+            Value childObj = addNodeRecursive(
+                child,
+                boneNames,
+                boneInverses,
+                bones,
+                skinnedGroups,
+                orderedBoneInverses,
+                boneNameToUuid
+            );
             obj.invokeMember("add", childObj);
         }
         return obj;
@@ -500,5 +525,80 @@ public class JGLTFLoader {
             for (int i = 0; i < total && i < floats.length; i++) out[i] = (int) floats[i];
         }
         return out;
+    }
+
+    // Build Three.js AnimationClips from glTF animations
+    private Value buildAnimations(GltfModel gltfModel, HashMap<String, String> boneNameToUuid) {
+        Value clips = Array.newInstance();
+        List<AnimationModel> anims = gltfModel.getAnimationModels();
+        if (anims == null || anims.isEmpty()) return clips;
+
+        for (AnimationModel anim : anims) {
+            Value tracks = Array.newInstance();
+            List<AnimationModel.Channel> channels = anim.getChannels();
+            if (channels == null) continue;
+            double maxTime = 0.0;
+
+            for (AnimationModel.Channel ch : channels) {
+                NodeModel target = ch.getNodeModel();
+                if (target == null) continue;
+                String nodeName = target.getName();
+                if (nodeName == null || nodeName.isEmpty()) continue; // need a target path
+
+                AnimationModel.Sampler sampler = ch.getSampler();
+                if (sampler == null) continue;
+                AccessorModel input = sampler.getInput();
+                AccessorModel output = sampler.getOutput();
+                if (input == null || output == null) continue;
+
+                float[] times = getFloatArray(input);
+                float[] values = getFloatArray(output);
+                Value jsTimes = Float32Array.newInstance(times);
+                Value jsValues = Float32Array.newInstance(values);
+
+                String pathKey = ch.getPath();
+                if (pathKey != null) pathKey = pathKey.toLowerCase();
+                
+                switch (pathKey) {
+                  case "translation": {
+                    if (values.length % 3 != 0) break;
+                    String path = boneNameToUuid.get(nodeName) + ".position";
+                    Value track = threeJS.getMember("VectorKeyframeTrack").newInstance(path, jsTimes, jsValues);
+                    tracks.invokeMember("push", track);
+                    break;
+                  }
+                  case "rotation": {
+                    if (values.length % 4 != 0) break;
+                    String path = boneNameToUuid.get(nodeName) + ".quaternion";
+                    Value track = threeJS.getMember("QuaternionKeyframeTrack").newInstance(path, jsTimes, jsValues);
+                    tracks.invokeMember("push", track);
+                    break;
+                  }
+                  case "scale": {
+                    if (values.length % 3 != 0) break;
+                    String path = boneNameToUuid.get(nodeName) + ".scale";
+                    Value track = threeJS.getMember("VectorKeyframeTrack").newInstance(path, jsTimes, jsValues);
+                    tracks.invokeMember("push", track);
+                    break;
+                  }
+                  case "weights":
+                  default:
+                    break;
+                }
+
+                maxTime = 0.0;
+                if (times.length > 0) {
+                double last = times[times.length - 1];
+                if (last > maxTime) maxTime = last;
+                }
+            }
+
+            String name = anim.getName();
+            if (name == null || name.isEmpty()) name = "clip";
+            Value clip = threeJS.getMember("AnimationClip").newInstance(name, maxTime, tracks);
+            clips.invokeMember("push", clip);
+        }
+
+        return clips;
     }
 }
