@@ -21,7 +21,7 @@ import java.util.List;
  * Supports PBR materials with embedded textures.
  * Note: Does not support Draco compression.
  */
-public class JGLTFLoader {
+public class GLTFLoader {
     
     private final Value threeJS;
     private final TextureLoader textureLoader;
@@ -31,7 +31,7 @@ public class JGLTFLoader {
     private final Value Uint16Array;
     private final Value Uint32Array;
     
-    public JGLTFLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
+    public GLTFLoader(Context jsContext, Value threeJS, TextureLoader textureLoader) {
         this.threeJS = threeJS;
         this.textureLoader = textureLoader;
 

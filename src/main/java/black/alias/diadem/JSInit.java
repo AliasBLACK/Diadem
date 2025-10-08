@@ -11,12 +11,12 @@ import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 public class JSInit {
 	
 	private AWTGLCanvas canvas;
 	private JSContext jsContext;
-	private black.alias.diadem.Loaders.ScriptManager scriptManager;
 	
 	private Settings settings;
 	private volatile boolean running = false;
@@ -153,7 +153,6 @@ public class JSInit {
 	
 	private void initJSContext() {
 		jsContext = new JSContext();
-		scriptManager = new black.alias.diadem.Loaders.ScriptManager(jsContext);
 
 		try {
 			jsContext.executeScriptFile("/polyfills.js"); 
@@ -161,12 +160,27 @@ public class JSInit {
 			jsContext.setupModelLoader();
 			jsContext.setupTextureLoader();
 			jsContext.executeScriptFile("/extensions.js");
-			scriptManager.loadMainScript();
+			loadMainScript();
 		} catch (Exception e) {
 			System.err.println("Failed to initialize JavaScript context: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
+
+	public void loadMainScript() throws IOException {
+        String scriptName = settings.getMainScript();
+        try {
+            // Import using an absolute resource path so relative imports resolve
+            String resourcePath = "/scripts/" + scriptName;
+            String importAndInstantiate = String.format(
+                "import Main from '%s'; globalThis.mainEntity = new Main();",
+                resourcePath
+            );
+            jsContext.executeModule(importAndInstantiate);
+        } catch (Exception e) {
+            throw new IOException("Failed to load and instantiate Main entity from resource /scripts/" + scriptName + ": " + e.getMessage(), e);
+        }
+    }
 
 	private void shutdown() {
 		running = false;
